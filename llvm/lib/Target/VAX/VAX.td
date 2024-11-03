@@ -20,7 +20,7 @@ include "llvm/Target/Target.td"
 // Descriptions
 //===----------------------------------------------------------------------===//
 
-//include "VAXRegisterInfo.td"
+include "VAXRegisterInfo.td"
 //include "VAXInstrInfo.td"
 //include "VAXCallingConv.td"
 

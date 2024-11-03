@@ -1,4 +1,4 @@
-//===--- VAX.h - Declare VAX target feature support --------*- C++ -*-===//
+//===--- VAX.h - Declare VAX target feature support ---------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -16,32 +16,31 @@
 #include "clang/Basic/TargetInfo.h"
 #include "clang/Basic/TargetOptions.h"
 #include "llvm/Support/Compiler.h"
+#include "llvm/TargetParser/Triple.h"
 
 namespace clang {
 namespace targets {
 
-// VAX Target
-class VAXTargetInfo : public TargetInfo {
+class LLVM_LIBRARY_VISIBILITY VAXTargetInfo : public TargetInfo {
 
 public:
   VAXTargetInfo(const llvm::Triple &Triple, const TargetOptions &)
       : TargetInfo(Triple) {
     NoAsmVariants = true;
-    LongLongAlign = 32;
-    SuitableAlign = 32;
-    DoubleAlign = LongDoubleAlign = 32;
+    LongLongAlign = 8;
+    SuitableAlign = 8;
+    DoubleAlign = LongDoubleAlign = 8;
     SizeType = UnsignedInt;
     PtrDiffType = SignedInt;
     IntPtrType = SignedInt;
-    WCharType = UnsignedChar;
-    WIntType = UnsignedInt;
-    UseZeroLengthBitfieldAlignment = true;
-    resetDataLayout("e-m:e-p:32:32-i1:8:32-i8:8:32-i16:16:32-i64:32"
-                    "-f64:32-a:0:32-n32");
+    WCharType = SignedInt;
+    WIntType = SignedInt;
   }
 
   void getTargetDefines(const LangOptions &Opts,
                         MacroBuilder &Builder) const override;
+
+  ArrayRef<Builtin::Info> getTargetBuiltins() const override;
 
   BuiltinVaListKind getBuiltinVaListKind() const override {
     return TargetInfo::VoidPtrBuiltinVaList;
@@ -49,19 +48,16 @@ public:
 
   std::string_view getClobbers() const override { return ""; }
 
-  ArrayRef<const char *> getGCCRegNames() const override {
-    static const char *const GCCRegNames[] = {
-        "r0", "r1", "r2",  "r3",  "r4", "r5", "r6", "r7",
-        "r8", "r9", "r10", "r11", "cp", "dp", "sp", "lr"
-    };
-    return llvm::ArrayRef(GCCRegNames);
-  }
+  ArrayRef<const char *> getGCCRegNames() const override;
 
   ArrayRef<TargetInfo::GCCRegAlias> getGCCRegAliases() const override {
     return {};
   }
 
-
+  bool validateAsmConstraint(const char *&Name,
+                             TargetInfo::ConstraintInfo &Info) const override {
+    return false;
+  }
 };
 } // namespace targets
 } // namespace clang
