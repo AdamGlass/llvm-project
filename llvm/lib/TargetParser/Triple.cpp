@@ -77,6 +77,7 @@ StringRef Triple::getArchTypeName(ArchType Kind) {
   case tcele:          return "tcele";
   case thumb:          return "thumb";
   case thumbeb:        return "thumbeb";
+  case vax:            return "vax";
   case ve:             return "ve";
   case wasm32:         return "wasm32";
   case wasm64:         return "wasm64";
@@ -218,6 +219,8 @@ StringRef Triple::getArchTypePrefix(ArchType Kind) {
 
   case riscv32:
   case riscv64:     return "riscv";
+
+  case vax:         return "vax";
 
   case ve:          return "ve";
   case csky:        return "csky";
@@ -460,6 +463,7 @@ Triple::ArchType Triple::getArchTypeForLLVMName(StringRef Name) {
     .Case("wasm64", wasm64)
     .Case("renderscript32", renderscript32)
     .Case("renderscript64", renderscript64)
+    .Case("vax", vax)
     .Case("ve", ve)
     .Case("csky", csky)
     .Case("loongarch32", loongarch32)
@@ -602,6 +606,7 @@ static Triple::ArchType parseArch(StringRef ArchName) {
           .Case("renderscript32", Triple::renderscript32)
           .Case("renderscript64", Triple::renderscript64)
           .Case("shave", Triple::shave)
+          .Case("vax", Triple::vax)
           .Case("ve", Triple::ve)
           .Case("wasm32", Triple::wasm32)
           .Case("wasm64", Triple::wasm64)
@@ -950,6 +955,7 @@ static Triple::ObjectFormatType getDefaultFormat(const Triple &T) {
   case Triple::tce:
   case Triple::tcele:
   case Triple::thumbeb:
+  case Triple::vax:
   case Triple::ve:
   case Triple::xcore:
   case Triple::xtensa:
@@ -1644,6 +1650,7 @@ unsigned Triple::getArchPointerBitWidth(llvm::Triple::ArchType Arch) {
   case llvm::Triple::tcele:
   case llvm::Triple::thumb:
   case llvm::Triple::thumbeb:
+  case llvm::Triple::vax:
   case llvm::Triple::wasm32:
   case llvm::Triple::x86:
   case llvm::Triple::xcore:
@@ -1735,6 +1742,7 @@ Triple Triple::get32BitArchVariant() const {
   case Triple::thumb:
   case Triple::thumbeb:
   case Triple::wasm32:
+  case Triple::vax:
   case Triple::x86:
   case Triple::xcore:
   case Triple::xtensa:
@@ -1787,6 +1795,7 @@ Triple Triple::get64BitArchVariant() const {
   case Triple::sparcel:
   case Triple::tce:
   case Triple::tcele:
+  case Triple::vax:
   case Triple::xcore:
   case Triple::xtensa:
     T.setArch(UnknownArch);
