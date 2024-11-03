@@ -1,0 +1,20 @@
+
+#ifndef ELF_RELOC
+#error "ELF_RELOC must be defined"
+#endif
+
+// Relocation types defined in following documents.
+// LLVM_VAX
+//
+
+ELF_RELOC(R_VAX_NONE, 0)
+ELF_RELOC(R_VAX_32, 1)
+ELF_RELOC(R_VAX_16, 2)
+ELF_RELOC(R_VAX_8, 3)
+ELF_RELOC(R_VAX_PC32, 4)
+ELF_RELOC(R_VAX_PC16, 5)
+ELF_RELOC(R_VAX_PC8, 6)
+ELF_RELOC(R_VAX_COPY, 19)
+ELF_RELOC(R_VAX_GLOB_DAT,  20)
+ELF_RELOC(R_VAX_JMP_SLOT,  21)
+ELF_RELOC(R_VAX_RELATIVE, 22)
