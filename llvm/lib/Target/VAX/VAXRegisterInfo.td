@@ -10,7 +10,7 @@
 //  Declarations that describe the VAX register file
 //===----------------------------------------------------------------------===//
 
-let Namespace = "RISCV" in {
+let Namespace = "VAX" in {
 class VAXReg<bits<4> Enc, string n, list<string> altNames = [] > : Register<n, altNames> {
   let HWEncoding = Enc;
 }
