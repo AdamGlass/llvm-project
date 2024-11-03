@@ -12,7 +12,7 @@
 
 let Namespace = "VAX" in {
 class VAXReg<bits<4> Enc, string n, list<string> altNames = [] > : Register<n, altNames> {
-  let HWEncoding = Enc;
+  let HWEncoding{3-0} = Enc;
 }
 
 def R0  : VAXReg< 0, "r0">,  DwarfRegNum<[0]>;
@@ -27,11 +27,12 @@ def R8  : VAXReg< 8, "r8">,  DwarfRegNum<[8]>;
 def R9  : VAXReg< 9, "r9">,  DwarfRegNum<[9]>;
 def R10 : VAXReg<10, "r10">, DwarfRegNum<[10]>;
 def R11 : VAXReg<11, "r11">, DwarfRegNum<[11]>;
-let RegAltNameIndices = [RegNamesRaw] in {
-def R12 : VAXReg<12, "ap", [], ["r12"]>,  DwarfRegNum<[12]>;
-def SP  : VAXReg<13, "fp", [], ["r13"]>,  DwarfRegNum<[13]>;
-def LR  : VAXReg<14, "sp", [], ["r14"]>,  DwarfRegNum<[14]>;
-def PC  : VAXReg<15, "pc", [], ["r15"]>,  DwarfRegNum<[15]>;
-}
+def AP  : VAXReg<12, "ap">,  DwarfRegNum<[12]>;
+def FP  : VAXReg<13, "fp">,  DwarfRegNum<[13]>;
+def SP  : VAXReg<14, "sp">,  DwarfRegNum<[14]>;
+def PC  : VAXReg<15, "pc">,  DwarfRegNum<[15]>;
+
+def GpRegs : RegisterClass<"VAX", [i32], 8,
+    (add R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, AP, FP, SP, PC)>;
 
 } // Namespace = "VAX"
