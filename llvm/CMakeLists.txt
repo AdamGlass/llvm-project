@@ -499,6 +499,7 @@ set(LLVM_ALL_EXPERIMENTAL_TARGETS
   DirectX
   M68k
   SPIRV
+  VAX
   Xtensa
 )
 

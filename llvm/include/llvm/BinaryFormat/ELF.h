@@ -979,6 +979,11 @@ enum {
 #include "ELFRelocs/MSP430.def"
 };
 
+// ELF Relocation types for VAX
+enum : unsigned {
+#include "ELFRelocs/VAX.def"
+};
+
 // ELF Relocation type for VE.
 enum {
 #include "ELFRelocs/VE.def"
