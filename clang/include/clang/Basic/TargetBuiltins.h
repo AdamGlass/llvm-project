@@ -135,6 +135,16 @@ namespace clang {
   };
   }
 
+  /// VAX builtins
+  namespace VAX {
+  enum {
+    LastTIBuiltin = clang::Builtin::FirstTSBuiltin - 1,
+#define BUILTIN(ID, TYPE, ATTRS) BI##ID,
+#include "clang/Basic/BuiltinsVAX.def"
+    LastTSBuiltin
+  };
+  }
+
   /// VE builtins
   namespace VE {
   enum {
