@@ -14,7 +14,7 @@
 #ifndef LLVM_LIB_TARGET_VAX_VAX_H
 #define LLVM_LIB_TARGET_VAX_VAX_H
 
-//#include "MCTargetDesc/VAXMCTargetDesc.h"
+#include "MCTargetDesc/VAXMCTargetDesc.h"
 #include "llvm/PassRegistry.h"
 #include "llvm/Target/TargetMachine.h"
 
