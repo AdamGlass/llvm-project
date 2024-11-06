@@ -10,9 +10,9 @@
 //  Declarations that describe the VAX register file
 //===----------------------------------------------------------------------===//
 
-let Namespace = "VAX" in {
 class VAXReg<bits<16> Enc, string n, list<string> altNames = [] > : Register<n, altNames> {
   let HWEncoding = Enc;
+  let Namespace = "VAX";
 }
 
 def R0  : VAXReg< 0, "r0">,  DwarfRegNum<[0]>;
@@ -40,5 +40,3 @@ def VRegs : RegisterClass<"VAX", [i32], 32,
 def SR :  RegisterClass<"VAX", [i32], 32, (add PSL)>;
 
 def VRegsOut :  RegisterClass<"VAX", [i32], 32, (add (sub VRegs, AP, FP, SP, PC, PSL))>;
-
-} // Namespace = "VAX"
