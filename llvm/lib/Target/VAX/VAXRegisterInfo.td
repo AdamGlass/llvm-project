@@ -11,8 +11,8 @@
 //===----------------------------------------------------------------------===//
 
 let Namespace = "VAX" in {
-class VAXReg<bits<4> Enc, string n, list<string> altNames = [] > : Register<n, altNames> {
-  let HWEncoding{3-0} = Enc;
+class VAXReg<bits<16> Enc, string n, list<string> altNames = [] > : Register<n, altNames> {
+  let HWEncoding = Enc;
 }
 
 def R0  : VAXReg< 0, "r0">,  DwarfRegNum<[0]>;
@@ -32,7 +32,13 @@ def FP  : VAXReg<13, "fp">,  DwarfRegNum<[13]>;
 def SP  : VAXReg<14, "sp">,  DwarfRegNum<[14]>;
 def PC  : VAXReg<15, "pc">,  DwarfRegNum<[15]>;
 
-def GpRegs : RegisterClass<"VAX", [i32], 8,
-    (add R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, AP, FP, SP, PC)>;
+def PSL : VAXReg<15, "psl">,  DwarfRegNum<[16]>;
+
+def VRegs : RegisterClass<"VAX", [i32], 32,
+    (add R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, AP, FP, SP, PC, PSL)>;
+
+def SR :  RegisterClass<"VAX", [i32], 32, (add PSL)>;
+
+def VRegsOut :  RegisterClass<"VAX", [i32], 32, (add (sub VRegs, AP, FP, SP, PC, PSL))>;
 
 } // Namespace = "VAX"
