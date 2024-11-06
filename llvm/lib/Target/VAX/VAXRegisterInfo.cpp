@@ -12,8 +12,8 @@
 
 #include "VAXRegisterInfo.h"
 #include "VAX.h"
-#if 0
 #include "VAXInstrInfo.h"
+#if 0
 #include "VAXMachineFunctionInfo.h"
 #include "VAXSubtarget.h"
 #endif
