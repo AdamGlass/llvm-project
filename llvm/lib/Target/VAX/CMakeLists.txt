@@ -1,6 +1,7 @@
 add_llvm_component_group(VAX)
 set(LLVM_TARGET_DEFINITIONS VAX.td)
 
+tablegen(LLVM VAXGenInstrInfo.inc -gen-instr-info)
 tablegen(LLVM VAXGenRegisterInfo.inc -gen-register-info)
 
 add_public_tablegen_target(VaxCommonTableGen)
