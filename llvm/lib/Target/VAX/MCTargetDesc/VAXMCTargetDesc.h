@@ -25,7 +25,7 @@
 #define GET_INSTRINFO_MC_HELPER_DECLS
 #include "VAXGenInstrInfo.inc"
 
-//#define GET_SUBTARGETINFO_ENUM
-//#include "VAXGenSubtargetInfo.inc"
+#define GET_SUBTARGETINFO_ENUM
+#include "VAXGenSubtargetInfo.inc"
 
 #endif // LLVM_LIB_TARGET_VAX_MCTARGETDESC_VAXMCTARGETDESC_H

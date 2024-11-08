@@ -27,6 +27,7 @@ class VAXInstrInfo : public VAXGenInstrInfo {
 public:
   VAXInstrInfo();
 
+#if 0
   /// getRegisterInfo - TargetInstrInfo is a superset of MRegister info.  As
   /// such, whenever a client has an instance of instruction info, it should
   /// always be able to get register info as well (through this method).
@@ -88,7 +89,11 @@ public:
   MachineBasicBlock::iterator loadImmediate(MachineBasicBlock &MBB,
                                             MachineBasicBlock::iterator MI,
                                             unsigned Reg, uint64_t Value) const;
+  #endif
+
 };
+
+
 
 }
 
