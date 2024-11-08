@@ -42,3 +42,32 @@ using namespace llvm;
 #define GET_REGINFO_TARGET_DESC
 #include "VAXGenRegisterInfo.inc"
 
+VAXRegisterInfo::VAXRegisterInfo()
+  : VAXGenRegisterInfo(0) {
+}
+
+const MCPhysReg *
+VAXRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
+  static const MCPhysReg CalleeSavedRegs[] = {
+    VAX::R6, VAX::R7, VAX::R8, VAX::R9,
+    VAX::R10, VAX::R11
+  };
+
+  return CalleeSavedRegs;
+}
+
+
+BitVector VAXRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
+  BitVector Reserved(getNumRegs());
+
+  Reserved.set(VAX::AP);
+  Reserved.set(VAX::FP);
+  Reserved.set(VAX::SP);
+  Reserved.set(VAX::PC);
+  Reserved.set(VAX::PSL);
+  return Reserved;
+}
+
+Register VAXRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
+  return VAX::FP;
+}
