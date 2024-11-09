@@ -2,6 +2,7 @@ add_llvm_component_group(VAX)
 set(LLVM_TARGET_DEFINITIONS VAX.td)
 
 tablegen(LLVM VAXGenAsmWriter.inc -gen-asm-writer)
+tablegen(LLVM VAXGenCallingConv.inc -gen-callingconv)
 tablegen(LLVM VAXGenInstrInfo.inc -gen-instr-info)
 tablegen(LLVM VAXGenRegisterInfo.inc -gen-register-info)
 tablegen(LLVM VAXGenSubtargetInfo.inc -gen-subtarget)
