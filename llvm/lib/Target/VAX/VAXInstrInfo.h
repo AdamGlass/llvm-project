@@ -27,13 +27,13 @@ class VAXInstrInfo : public VAXGenInstrInfo {
 public:
   VAXInstrInfo();
 
-#if 0
   /// getRegisterInfo - TargetInstrInfo is a superset of MRegister info.  As
   /// such, whenever a client has an instance of instruction info, it should
   /// always be able to get register info as well (through this method).
   ///
   const TargetRegisterInfo &getRegisterInfo() const { return RI; }
 
+#if 0
   /// isLoadFromStackSlot - If the specified machine instruction is a direct
   /// load from a stack slot, return the virtual or physical register number of
   /// the destination along with the FrameIndex of the loaded stack slot.  If

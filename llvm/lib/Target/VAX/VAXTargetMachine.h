@@ -35,10 +35,8 @@ public:
                      bool JIT);
   ~VAXTargetMachine() override;
 
-  const VAXSubtarget *getSubtargetImpl() const { return &Subtarget; }
-  const VAXSubtarget *getSubtargetImpl(const Function &) const override {
-    return &Subtarget;
-  }
+#if 0
+  const VAXSubtarget *getSubtargetImpl(const Function &) const override;
 
   // Pass Pipeline Configuration
   TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
@@ -52,6 +50,8 @@ public:
   MachineFunctionInfo *
   createMachineFunctionInfo(BumpPtrAllocator &Allocator, const Function &F,
                             const TargetSubtargetInfo *STI) const override;
+#endif
+
 };
 
 } // end namespace llvm

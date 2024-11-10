@@ -13,10 +13,8 @@
 #include "VAXRegisterInfo.h"
 #include "VAX.h"
 #include "VAXInstrInfo.h"
-#if 0
 #include "VAXMachineFunctionInfo.h"
 #include "VAXSubtarget.h"
-#endif
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"

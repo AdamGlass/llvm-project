@@ -12,7 +12,25 @@
 
 #include "VAXSubtarget.h"
 #include "VAX.h"
-#include "llvm/MC/TargetRegistry.h"
+#include "VAXInstrInfo.h"
+#include "VAXRegisterInfo.h"
+#include "MCTargetDesc/VAXMCTargetDesc.h"
+#include "llvm/ADT/STLExtras.h"
+#include "llvm/ADT/SmallSet.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/CodeGen/MachineInstr.h"
+#include "llvm/CodeGen/MachineOperand.h"
+#include "llvm/CodeGen/MachineScheduler.h"
+#include "llvm/CodeGen/ScheduleDAG.h"
+#include "llvm/CodeGen/ScheduleDAGInstrs.h"
+#include "llvm/Support/CommandLine.h"
+#include "llvm/Support/ErrorHandling.h"
+#include "llvm/Target/TargetMachine.h"
+#include <algorithm>
+#include <cassert>
+#include <map>
+#include <optional>
 
 using namespace llvm;
 
