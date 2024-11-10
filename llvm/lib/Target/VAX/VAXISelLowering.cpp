@@ -40,19 +40,9 @@ using namespace llvm;
 
 #define DEBUG_TYPE "vax-lower"
 
-const char *VAXTargetLowering::
-getTargetNodeName(unsigned Opcode) const
-{
-  switch ((VAXISD::NodeType)Opcode)
-  {
-    case VAXISD::FIRST_NUMBER      : break;
-  }
-  return nullptr;
-}
-
 VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
-                                         const VAXSubtarget &Subtarget)
-    : TargetLowering(TM), TM(TM), Subtarget(Subtarget) {
+                                     const VAXSubtarget &Subtarget)
+    : TargetLowering(TM), Subtarget(&Subtarget) {
 
   // Set up the register classes.
   addRegisterClass(MVT::i32, &VAX::VRegsRegClass);
