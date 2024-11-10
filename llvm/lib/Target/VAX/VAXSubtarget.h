@@ -16,7 +16,7 @@
 #include "VAXFrameLowering.h"
 #include "VAXISelLowering.h"
 #include "VAXInstrInfo.h"
-//#include "VAXSelectionDAGInfo.h"
+#include "VAXSelectionDAGInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/Target/TargetMachine.h"
