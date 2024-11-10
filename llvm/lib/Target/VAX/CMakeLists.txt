@@ -3,6 +3,8 @@ set(LLVM_TARGET_DEFINITIONS VAX.td)
 
 tablegen(LLVM VAXGenAsmWriter.inc -gen-asm-writer)
 tablegen(LLVM VAXGenCallingConv.inc -gen-callingconv)
+tablegen(LLVM VAXGenDAGISel.inc -gen-dag-isel)
+tablegen(LLVM VAXGenDisassemblerTables.inc -gen-disassembler)
 tablegen(LLVM VAXGenInstrInfo.inc -gen-instr-info)
 tablegen(LLVM VAXGenRegisterInfo.inc -gen-register-info)
 tablegen(LLVM VAXGenSubtargetInfo.inc -gen-subtarget)
@@ -12,8 +14,11 @@ add_public_tablegen_target(VAXCommonTableGen)
 add_llvm_target(VAXCodeGen
   VAXFrameLowering.cpp
   VAXInstrInfo.cpp
+  VAXISelDAGToDAG.cpp
+  VAXISelLowering.cpp
   VAXRegisterInfo.cpp
   VAXSubtarget.cpp
+  VAXTargetMachine.cpp
 
   LINK_COMPONENTS
   Analysis
