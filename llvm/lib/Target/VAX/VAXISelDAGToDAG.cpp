@@ -31,7 +31,7 @@
 #include "llvm/Support/raw_ostream.h"
 using namespace llvm;
 
-#define DEBUG_TYPE "xcore-isel"
+#define DEBUG_TYPE "vax-isel"
 #define PASS_NAME "VAX DAG->DAG Pattern Instruction Selection"
 
 /// VAXDAGToDAGISel - VAX specific code to select VAX machine

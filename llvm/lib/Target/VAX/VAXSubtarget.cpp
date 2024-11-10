@@ -34,7 +34,7 @@
 
 using namespace llvm;
 
-#define DEBUG_TYPE "xcore-subtarget"
+#define DEBUG_TYPE "vax-subtarget"
 
 #define GET_SUBTARGETINFO_TARGET_DESC
 #define GET_SUBTARGETINFO_CTOR
