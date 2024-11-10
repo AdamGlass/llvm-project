@@ -36,6 +36,7 @@ namespace llvm {
   //===--------------------------------------------------------------------===//
   class VAXTargetLowering : public TargetLowering
   {
+    const VAXSubtarget *Subtarget;
   public:
     explicit VAXTargetLowering(const TargetMachine &TM,
                                  const VAXSubtarget &Subtarget);
