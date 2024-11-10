@@ -14,7 +14,7 @@
 #define LLVM_LIB_TARGET_VAX_VAXSUBTARGET_H
 
 #include "VAXFrameLowering.h"
-//#include "VAXISelLowering.h"
+#include "VAXISelLowering.h"
 #include "VAXInstrInfo.h"
 //#include "VAXSelectionDAGInfo.h"
 #include "llvm/CodeGen/TargetSubtargetInfo.h"

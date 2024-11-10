@@ -15,7 +15,6 @@
 #include "VAXMachineFunctionInfo.h"
 #include "VAXSubtarget.h"
 #include "VAXTargetMachine.h"
-#include "VAXTargetObjectFile.h"
 #include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
