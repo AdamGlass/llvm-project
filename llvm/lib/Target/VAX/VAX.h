@@ -19,7 +19,6 @@
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
-#if 0
   class FunctionPass;
   class ModulePass;
   class PassRegistry;
@@ -33,7 +32,6 @@ namespace llvm {
                                    CodeGenOptLevel OptLevel);
   ModulePass *createVAXLowerThreadLocalPass();
   void initializeVAXDAGToDAGISelLegacyPass(PassRegistry &);
-#endif
 } // end namespace llvm;
 
 #endif
