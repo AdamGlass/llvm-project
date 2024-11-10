@@ -14,11 +14,11 @@
 #include "TargetInfo/VAXTargetInfo.h"
 #include "VAX.h"
 #include "VAXMachineFunctionInfo.h"
-#nclude "VAXTargetObjectFile.h"
 #include "VAXTargetTransformInfo.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
 #include "llvm/CodeGen/Passes.h"
+#include "llvm/CodeGen/TargetLoweringObjectFileImpl.h"
 #include "llvm/CodeGen/TargetPassConfig.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/CodeGen.h"
@@ -40,6 +40,19 @@ getEffectiveVAXCodeModel(std::optional<CodeModel::Model> CM) {
   return CodeModel::Small;
 }
 
+namespace {
+class VAXELFTargetObjectFile : public TargetLoweringObjectFileELF {
+  void Initialize(MCContext &Ctx, const TargetMachine &TM) override {
+    TargetLoweringObjectFileELF::Initialize(Ctx, TM);
+    InitializeELF(TM.Options.UseInitArray);
+  }
+};
+} // namespace
+
+static std::unique_ptr<TargetLoweringObjectFile> createTLOF() {
+  return std::make_unique<VAXELFTargetObjectFile>();
+}
+
 /// Create an ILP32 architecture model
 ///
 VAXTargetMachine::VAXTargetMachine(const Target &T, const Triple &TT,
@@ -52,7 +65,7 @@ VAXTargetMachine::VAXTargetMachine(const Target &T, const Triple &TT,
           T, "e-m:e-p:32:32-i1:8:32-i8:8:32-i16:16:32-i64:32-f64:32-a:0:32-n32",
           TT, CPU, FS, Options, getEffectiveRelocModel(RM),
           getEffectiveVAXCodeModel(CM), OL),
-      TLOF(std::make_unique<VAXTargetObjectFile>()),
+      TLOF(createTLOF()),
       Subtarget(TT, std::string(CPU), std::string(FS), *this) {
   initAsmInfo();
 }
