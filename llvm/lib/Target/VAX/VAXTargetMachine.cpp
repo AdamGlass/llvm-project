@@ -103,7 +103,6 @@ void VAXPassConfig::addIRPasses() {
 }
 
 bool VAXPassConfig::addPreISel() {
-  addPass(createVAXLowerThreadLocalPass());
   return false;
 }
 
@@ -113,7 +112,6 @@ bool VAXPassConfig::addInstSelector() {
 }
 
 void VAXPassConfig::addPreEmitPass() {
-  addPass(createVAXFrameToArgsOffsetEliminationPass());
 }
 
 // Force static initialization.
@@ -121,11 +119,6 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeVAXTarget() {
   RegisterTargetMachine<VAXTargetMachine> X(getTheVAXTarget());
   PassRegistry &PR = *PassRegistry::getPassRegistry();
   initializeVAXDAGToDAGISelLegacyPass(PR);
-}
-
-TargetTransformInfo
-VAXTargetMachine::getTargetTransformInfo(const Function &F) const {
-  return TargetTransformInfo(VAXTTIImpl(this, F));
 }
 
 MachineFunctionInfo *VAXTargetMachine::createMachineFunctionInfo(
