@@ -35,13 +35,11 @@ public:
                      bool JIT);
   ~VAXTargetMachine() override;
 
-#if 0
-  const VAXSubtarget *getSubtargetImpl(const Function &) const override;
+  const VAXSubtarget *getSubtargetImpl() const { return &Subtarget; }
+  const VAXSubtarget *getSubtargetImpl(const Function &) const override { return &Subtarget; }
 
   // Pass Pipeline Configuration
   TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
-
-  TargetTransformInfo getTargetTransformInfo(const Function &F) const override;
 
   TargetLoweringObjectFile *getObjFileLowering() const override {
     return TLOF.get();
@@ -50,7 +48,6 @@ public:
   MachineFunctionInfo *
   createMachineFunctionInfo(BumpPtrAllocator &Allocator, const Function &F,
                             const TargetSubtargetInfo *STI) const override;
-#endif
 
 };
 

@@ -16,6 +16,6 @@ Target &llvm::getTheVAXTarget() {
 }
 
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeVAXTargetInfo() {
-  RegisterTarget<Triple::VAX> X(getTheVAXTarget(), "VAX", "VAX",
+  RegisterTarget<Triple::vax> X(getTheVAXTarget(), "VAX", "VAX",
                                   "VAX");
 }
