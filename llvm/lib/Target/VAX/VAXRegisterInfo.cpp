@@ -69,3 +69,70 @@ BitVector VAXRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
 Register VAXRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   return VAX::FP;
 }
+
+bool
+VAXRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
+                                       int SPAdj, unsigned FIOperandNum,
+                                       RegScavenger *RS) const {
+  assert(SPAdj == 0 && "Unexpected");
+  MachineInstr &MI = *II;
+  MachineOperand &FrameOp = MI.getOperand(FIOperandNum);
+  int FrameIndex = FrameOp.getIndex();
+
+  MachineFunction &MF = *MI.getParent()->getParent();
+  const VAXInstrInfo &TII =
+      *static_cast<const VAXInstrInfo *>(MF.getSubtarget().getInstrInfo());
+
+  const VAXFrameLowering *TFI = getFrameLowering(MF);
+  int Offset = MF.getFrameInfo().getObjectOffset(FrameIndex);
+  int StackSize = MF.getFrameInfo().getStackSize();
+
+  LLVM_DEBUG(errs() << "\nFunction         : " << MF.getName() << "\n");
+  LLVM_DEBUG(errs() << "<--------->\n");
+  LLVM_DEBUG(MI.print(errs()));
+  LLVM_DEBUG(errs() << "FrameIndex         : " << FrameIndex << "\n");
+  LLVM_DEBUG(errs() << "FrameOffset        : " << Offset << "\n");
+  LLVM_DEBUG(errs() << "StackSize          : " << StackSize << "\n");
+
+  Offset += StackSize;
+
+  Register FrameReg = getFrameRegister(MF);
+
+  // Special handling of DBG_VALUE instructions.
+  if (MI.isDebugValue()) {
+    MI.getOperand(FIOperandNum).ChangeToRegister(FrameReg, false /*isDef*/);
+    MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset);
+    return false;
+  }
+
+  // fold constant into offset.
+  Offset += MI.getOperand(FIOperandNum + 1).getImm();
+  MI.getOperand(FIOperandNum + 1).ChangeToImmediate(0);
+
+  assert(Offset%4 == 0 && "Misaligned stack offset");
+  LLVM_DEBUG(errs() << "Offset             : " << Offset << "\n"
+                    << "<--------->\n");
+  Offset/=4;
+
+  Register Reg = MI.getOperand(0).getReg();
+  assert(VAX::VRegsRegClass.contains(Reg) && "Unexpected register operand");
+
+#if 0
+  if (TFI->hasFP(MF)) {
+    if (isImmUs(Offset))
+      InsertFPImmInst(II, TII, Reg, FrameReg, Offset);
+    else
+      InsertFPConstInst(II, TII, Reg, FrameReg, Offset, RS);
+  } else {
+    if (isImmU16(Offset))
+      InsertSPImmInst(II, TII, Reg, Offset);
+    else
+      InsertSPConstInst(II, TII, Reg, Offset, RS);
+  }
+#endif
+
+  // Erase old instruction.
+  MachineBasicBlock &MBB = *MI.getParent();
+  MBB.erase(II);
+  return true;
+}
