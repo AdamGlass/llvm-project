@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "VAX.h"
+#include "VAXToolchain.h"
 #include "CommonArgs.h"
 #include "clang/Driver/Compilation.h"
 #include "clang/Driver/Driver.h"
@@ -25,3 +25,12 @@ VAXToolChain::VAXToolChain(const Driver &D, const llvm::Triple &Triple,
     : ToolChain(D, Triple, Args) {
   // ProgramPaths are found via 'PATH' environment variable.
 }
+
+bool VAXToolChain::isPICDefault() const { return false; }
+
+bool VAXToolChain::isPIEDefault(const llvm::opt::ArgList &Args) const {
+  return false;
+}
+
+bool VAXToolChain::isPICDefaultForced() const { return false; }
+
