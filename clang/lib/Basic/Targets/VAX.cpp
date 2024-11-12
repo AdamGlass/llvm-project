@@ -39,7 +39,7 @@ ArrayRef<Builtin::Info> VAXTargetInfo::getTargetBuiltins() const {
 ArrayRef<const char *> VAXTargetInfo::getGCCRegNames() const {
     static const char *const GCCRegNames[] = {
         "r0", "r1", "r2",  "r3",  "r4", "r5", "r6", "r7",
-        "r8", "r9", "r10", "r11", "cp", "dp", "sp", "lr"
+        "r8", "r9", "r10", "r11", "ap", "fp", "sp", "pc"
     };
     return llvm::ArrayRef(GCCRegNames);
 }

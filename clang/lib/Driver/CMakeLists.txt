@@ -80,7 +80,7 @@ add_clang_library(clangDriver
   ToolChains/SPIRVOpenMP.cpp
   ToolChains/TCE.cpp
   ToolChains/UEFI.cpp
-  ToolChains/VAX.cpp
+  ToolChains/VAXToolchain.cpp
   ToolChains/VEToolchain.cpp
   ToolChains/WebAssembly.cpp
   ToolChains/XCore.cpp

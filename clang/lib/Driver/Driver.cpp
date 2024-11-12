@@ -47,6 +47,7 @@
 #include "ToolChains/Solaris.h"
 #include "ToolChains/TCE.h"
 #include "ToolChains/UEFI.h"
+#include "ToolChains/VAXToolchain.h"
 #include "ToolChains/VEToolchain.h"
 #include "ToolChains/WebAssembly.h"
 #include "ToolChains/XCore.h"
@@ -6591,6 +6592,9 @@ const ToolChain &Driver::getToolChain(const ArgList &Args,
               std::make_unique<toolchains::RISCVToolChain>(*this, Target, Args);
         else
           TC = std::make_unique<toolchains::BareMetal>(*this, Target, Args);
+        break;
+      case llvm::Triple::vax:
+        TC = std::make_unique<toolchains::VAXToolChain>(*this, Target, Args);
         break;
       case llvm::Triple::ve:
         TC = std::make_unique<toolchains::VEToolChain>(*this, Target, Args);

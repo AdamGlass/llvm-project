@@ -1030,6 +1030,11 @@ public:
     return getArch() == Triple::x86 || getArch() == Triple::x86_64;
   }
 
+  /// Tests whether the target is VAX
+  bool isVAX() const {
+    return getArch() == Triple::vax;
+  }
+
   /// Tests whether the target is VE
   bool isVE() const {
     return getArch() == Triple::ve;

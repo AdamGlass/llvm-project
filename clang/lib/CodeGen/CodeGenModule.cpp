@@ -295,6 +295,8 @@ createTargetCodeGenInfo(CodeGenModule &CGM) {
     return createSPIRVTargetCodeGenInfo(CGM);
   case llvm::Triple::dxil:
     return createDirectXTargetCodeGenInfo(CGM);
+  case llvm::Triple::vax:
+    return createVAXTargetCodeGenInfo(CGM);
   case llvm::Triple::ve:
     return createVETargetCodeGenInfo(CGM);
   case llvm::Triple::csky: {
