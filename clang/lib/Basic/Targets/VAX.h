@@ -26,6 +26,7 @@ class LLVM_LIBRARY_VISIBILITY VAXTargetInfo : public TargetInfo {
 public:
   VAXTargetInfo(const llvm::Triple &Triple, const TargetOptions &)
       : TargetInfo(Triple) {
+    BigEndian = false;
     NoAsmVariants = true;
     LongLongAlign = 8;
     SuitableAlign = 8;
