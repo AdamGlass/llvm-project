@@ -12,6 +12,7 @@ tablegen(LLVM VAXGenSubtargetInfo.inc -gen-subtarget)
 add_public_tablegen_target(VAXCommonTableGen)
 
 add_llvm_target(VAXCodeGen
+  VAXAsmPrinter.cpp
   VAXFrameLowering.cpp
   VAXInstrInfo.cpp
   VAXISelDAGToDAG.cpp

@@ -24,6 +24,28 @@ class InstVAX<dag outs, dag ins, string asmstr, list<dag> pattern>
     let Size = 0;
 }
 
+class VAXAddrMode<bits<4> mode> {
+    dag Mode = (ascend mode);
+}
+
+def VAXRegAddr: VAXAddrMode<5>;
+def VAXIndexedAddr: VAXAddrMode<4>;
+def VAXRegDeferredAddr: VAXAddrMode<6>;
+def VAXAutoDecAddr: VAXAddrMode<7>;
+def VAXAutoIncAddr: VAXAddrMode<8>;
+def VAXAutoIncDeferAddr: VAXAddrMode<9>;
+
+def VAXByteDispAddr: VAXAddrMode<10>;
+def VAXByteDispDeferAddr: VAXAddrMode<11>;
+def VAXWordDispAddr: VAXAddrMode<12>;
+def VAXWordDispDeferAddr: VAXAddrMode<13>;
+def VAXLongDispAddr: VAXAddrMode<14>;
+def VAXLongDispDeferAddr: VAXAddrMode<15>;
+
+class VAXPCAddr<bits<4> mode> {
+    dag Mode = (ascend mode);
+}
+
 class VAXEncOpRegister<string reg_opnd> {
     dag Value = (ascend (operand "$"#reg_opnd, 4),  0b0101);
 }
