@@ -66,6 +66,31 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
   setMaxAtomicSizeInBitsSupported(0);
 }
 
+//===----------------------------------------------------------------------===//
+//                      Calling Convention Implementation
+//===----------------------------------------------------------------------===//
+
+#include "VAXGenCallingConv.inc"
+
+SDValue VAXTargetLowering::LowerFormalArguments(
+    SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
+    const SmallVectorImpl<ISD::InputArg> &Ins,
+    const SDLoc &dl, SelectionDAG &DAG,
+    SmallVectorImpl<SDValue> &InVals) const {
+  MachineFunction &MF = DAG.getMachineFunction();
+  MachineFrameInfo &MFI = MF.getFrameInfo();
+  MachineRegisterInfo &RegInfo = MF.getRegInfo();
+  VAXFunctionInfo *XFI = MF.getInfo<VAXFunctionInfo>();
+
+  // Assign locations to all of the incoming arguments.
+  SmallVector<CCValAssign, 16> ArgLocs;
+  CCState CCInfo(CallConv, isVarArg, DAG.getMachineFunction(), ArgLocs,
+                 *DAG.getContext());
+
+  CCInfo.AnalyzeFormalArguments(Ins, CC_VAX);
+
+  return Chain;
+}
 
 //===----------------------------------------------------------------------===//
 //                           VAX Inline Assembly Support

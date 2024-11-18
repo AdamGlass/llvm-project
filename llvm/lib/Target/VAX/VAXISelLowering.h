@@ -41,6 +41,12 @@ namespace llvm {
     explicit VAXTargetLowering(const TargetMachine &TM,
                                  const VAXSubtarget &Subtarget);
 
+  private:
+    SDValue
+    LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
+                         const SmallVectorImpl<ISD::InputArg> &Ins,
+                         const SDLoc &dl, SelectionDAG &DAG,
+                         SmallVectorImpl<SDValue> &InVals) const override;
   };
 }
 
