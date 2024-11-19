@@ -66,6 +66,17 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
   setMaxAtomicSizeInBitsSupported(0);
 }
 
+const char *VAXTargetLowering::
+getTargetNodeName(unsigned Opcode) const
+{
+  switch ((VAXISD::NodeType)Opcode)
+  {
+    case VAXISD::FIRST_NUMBER      : break;
+    case VAXISD::RET               : return "VAXISD::RET";
+  }
+  return nullptr;
+}
+
 //===----------------------------------------------------------------------===//
 //                      Calling Convention Implementation
 //===----------------------------------------------------------------------===//
