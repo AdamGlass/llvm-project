@@ -75,7 +75,7 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
 SDValue VAXTargetLowering::LowerFormalArguments(
     SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
     const SmallVectorImpl<ISD::InputArg> &Ins,
-    const SDLoc &dl, SelectionDAG &DAG,
+    const SDLoc &DL, SelectionDAG &DAG,
     SmallVectorImpl<SDValue> &InVals) const {
   MachineFunction &MF = DAG.getMachineFunction();
   MachineFrameInfo &MFI = MF.getFrameInfo();
@@ -89,6 +89,33 @@ SDValue VAXTargetLowering::LowerFormalArguments(
 
   CCInfo.AnalyzeFormalArguments(Ins, CC_VAX);
 
+  if (isVarArg) {
+    report_fatal_error("Var arg not supported by LowerFormalArguments");
+  }
+
+  //
+  // All arguments are on stack.
+  //
+  // XXX not sure how we reference off AP but that maybe later when we lower
+  //     the frame index
+  //
+
+  for (const CCValAssign &VA : ArgLocs) {
+      assert(VA.isMemLoc());
+
+      unsigned ObjSize = VA.getLocVT().getSizeInBits() / 8;
+
+      // Is there an issue if the argument is big eg. quad?
+
+      // Create the frame index object for this incoming parameter...
+      int FI = MFI.CreateFixedObject(ObjSize, VA.getLocMemOffset(), true);
+      // Create the SelectionDAG nodes corresponding to a load
+      // from this parameter
+      SDValue FIN = DAG.getFrameIndex(FI, MVT::i32);
+      InVals.push_back(DAG.getLoad(
+          VA.getLocVT(), DL, Chain, FIN,
+          MachinePointerInfo::getFixedStack(DAG.getMachineFunction(), FI)));
+  }
   return Chain;
 }
 
