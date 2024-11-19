@@ -45,6 +45,10 @@ namespace llvm {
     explicit VAXTargetLowering(const TargetMachine &TM,
                                  const VAXSubtarget &Subtarget);
 
+    /// getTargetNodeName - This method returns the name of a target specific
+    //  DAG node.
+    const char *getTargetNodeName(unsigned Opcode) const override;
+
   private:
     SDValue
     LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
