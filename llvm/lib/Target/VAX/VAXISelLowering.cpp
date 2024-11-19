@@ -80,7 +80,7 @@ SDValue VAXTargetLowering::LowerFormalArguments(
   MachineFunction &MF = DAG.getMachineFunction();
   MachineFrameInfo &MFI = MF.getFrameInfo();
   MachineRegisterInfo &RegInfo = MF.getRegInfo();
-  VAXFunctionInfo *XFI = MF.getInfo<VAXFunctionInfo>();
+  VAXFunctionInfo *VFI = MF.getInfo<VAXFunctionInfo>();
 
   // Assign locations to all of the incoming arguments.
   SmallVector<CCValAssign, 16> ArgLocs;
@@ -100,6 +100,13 @@ SDValue VAXTargetLowering::LowerFormalArguments(
   //     the frame index
   //
 
+  //
+  // TODO: struct as return (observed)
+  //       Caller: stores pointer to reserved area is stored in r1 by caller
+  //       Callee: set r0 to r1 value
+  //               value is stored at r1's value....
+  //
+
   for (const CCValAssign &VA : ArgLocs) {
       assert(VA.isMemLoc());
 
@@ -117,6 +124,68 @@ SDValue VAXTargetLowering::LowerFormalArguments(
           MachinePointerInfo::getFixedStack(DAG.getMachineFunction(), FI)));
   }
   return Chain;
+}
+
+SDValue
+VAXTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
+                                 bool IsVarArg,
+                                 const SmallVectorImpl<ISD::OutputArg> &Outs,
+                                 const SmallVectorImpl<SDValue> &OutVals,
+                                 const SDLoc &DL, SelectionDAG &DAG) const {
+  // CCValAssign - represent the assignment of the return value to a location
+  SmallVector<CCValAssign, 16> RVLocs;
+  // CCState - Info about the registers and stack slot.
+  CCState CCInfo(CallConv, IsVarArg, DAG.getMachineFunction(), RVLocs,
+                 *DAG.getContext());
+
+  // Analize return values.
+  CCInfo.AnalyzeReturn(Outs, RetCC_VAX);
+
+  SDValue Glue;
+  SmallVector<SDValue, 4> RetOps(1, Chain);
+
+  // Copy the result values into the output registers.
+  for (unsigned i = 0; i != RVLocs.size(); ++i) {
+    CCValAssign &VA = RVLocs[i];
+    assert(VA.isRegLoc() && "Can only return in registers!");
+
+    Chain = DAG.getCopyToReg(Chain, DL, VA.getLocReg(), OutVals[i], Glue);
+
+    // Guarantee that all emitted copies are stuck together with flags.
+    Glue = Chain.getValue(1);
+    RetOps.push_back(DAG.getRegister(VA.getLocReg(), VA.getLocVT()));
+  }
+
+#if NOTYET
+  // The VAX ABI for returning structs by value requires that we copy
+  // the sret argument into rv for the return. We saved the argument into
+  // a virtual register in the entry block, so now we copy the value out
+  // and into rv.
+  if (DAG.getMachineFunction().getFunction().hasStructRetAttr()) {
+    MachineFunction &MF = DAG.getMachineFunction();
+    VAXMachineFunctionInfo *VAXMFI = MF.getInfo<VAXMachineFunctionInfo>();
+    Register Reg = VAXMFI->getSRetReturnReg();
+    assert(Reg &&
+           "SRetReturnReg should have been set in LowerFormalArguments().");
+    SDValue Val =
+        DAG.getCopyFromReg(Chain, DL, Reg, getPointerTy(DAG.getDataLayout()));
+
+    Chain = DAG.getCopyToReg(Chain, DL, VAX::R0, Val, Glue);
+    Glue = Chain.getValue(1);
+    RetOps.push_back(
+        DAG.getRegister(VAX::R0, getPointerTy(DAG.getDataLayout())));
+  }
+#endif
+
+  RetOps[0] = Chain; // Update chain
+
+  unsigned Opc = VAXISD::RET;
+  if (Glue.getNode())
+    RetOps.push_back(Glue);
+
+  // Return Void
+  return DAG.getNode(Opc, DL, MVT::Other,
+                     ArrayRef<SDValue>(&RetOps[0], RetOps.size()));
 }
 
 //===----------------------------------------------------------------------===//

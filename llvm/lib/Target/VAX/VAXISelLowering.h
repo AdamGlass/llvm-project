@@ -28,6 +28,10 @@ namespace llvm {
       // Start the numbering where the builtin ops and target ops leave off.
       FIRST_NUMBER = ISD::BUILTIN_OP_END,
 
+      // Corresponds to ret instruction
+      RET,
+
+
     };
   }
 
@@ -47,6 +51,11 @@ namespace llvm {
                          const SmallVectorImpl<ISD::InputArg> &Ins,
                          const SDLoc &dl, SelectionDAG &DAG,
                          SmallVectorImpl<SDValue> &InVals) const override;
+    SDValue LowerReturn(SDValue Chain, CallingConv::ID CallConv, bool IsVarArg,
+                        const SmallVectorImpl<ISD::OutputArg> &Outs,
+                        const SmallVectorImpl<SDValue> &OutVals, const SDLoc &DL,
+                        SelectionDAG &DAG) const override;
+
   };
 }
 
