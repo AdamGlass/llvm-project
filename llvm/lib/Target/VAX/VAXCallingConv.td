@@ -22,7 +22,16 @@ def CC_VAX : CallingConv<[
   // Promote i8/i16 arguments to i32.
   CCIfType<[i8, i16], CCPromoteToType<i32>>,
 
-  // Integer values get stored in stack slots that are 4 bytes in
-  // size and 4-byte aligned.
-  CCIfType<[i32], CCAssignToStack<4, 4>>
+  /// Handles byval parameters.  What sets R1?
+  CCIfByVal<CCPassByVal<4, 4>>,
+
+  // Otherwise they are assigned to the stack in 4-byte aligned units.
+  CCIfType<[i32],  CCAssignToStack<4, 4>>
+]>;
+
+// VAX 32-bit C return-value convention.
+def RetCC_VAX : CallingConv<[
+  // Specify two registers to allow returning 64-bit results that have already
+  // been lowered to 2 32-bit values.
+  CCIfType<[i32], CCAssignToReg<[R0, R1]>>
 ]>;

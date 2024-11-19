@@ -141,3 +141,8 @@ def XorL3 : InstVAX<(outs VRegsOut:$rd),
 //
 // Not covered - Floating Point, Queue instructions
 //
+
+// VAX specific DAG Nodes
+
+def VAXRet : SDNode<"VAXISD::RET", SDTBrind,
+                      [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
