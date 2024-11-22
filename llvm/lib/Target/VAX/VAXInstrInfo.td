@@ -74,6 +74,21 @@ def MovL2 : InstVAX<(outs VRCO:$rd),
                     "movl3 $rs1, $rd",
                     [(set i32:$rd, i32:$rs1)]>;
 
+def imm6 : PatLeaf<(imm), [{
+    uint32_t value = (uint32_t)N->getZExtValue();
+    return value <= 63;
+}]>;
+
+def LDC : InstVAX<(outs VRCO:$rd),
+                  (ins i32imm:$i),
+                  "movl2 $i, $rd",
+                  [(set i32:$rd, imm6:$i)]>;
+
+def LRD : InstVAX<(outs VRCO:$Rd),
+                  (ins VRC:$Rs),
+                  "movl2 ($Rs), $Rd",
+                  [(set VRCO:$Rd, (load VRC:$Rs))]>;
+
 // MOVZ - Move Zero-Extended
 
 
@@ -150,3 +165,6 @@ let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
 // Not covered - Floating Point, Queue instructions
 //
 
+//
+// FAUX Load/Store instructions
+//
