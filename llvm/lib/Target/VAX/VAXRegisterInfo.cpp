@@ -115,7 +115,7 @@ VAXRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   Offset/=4;
 
   Register Reg = MI.getOperand(0).getReg();
-  assert(VAX::VRegsRegClass.contains(Reg) && "Unexpected register operand");
+  assert(VAX::VRCRegClass.contains(Reg) && "Unexpected register operand");
 
 #if 0
   if (TFI->hasFP(MF)) {

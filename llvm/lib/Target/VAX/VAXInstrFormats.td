@@ -19,9 +19,20 @@ class InstVAX<dag outs, dag ins, string asmstr, list<dag> pattern>
     let Pattern = pattern;
 
     dag Inst = (ascend);
+    dag Op;
 
   // Number of bytes
     let Size = 0;
+}
+
+class InstVAX1<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern>
+      : InstVAX<outs, ins, asmstr, pattern> {
+      dag Op = (ascend op);
+}
+
+class InstVAX2<bits<16> op, dag outs, dag ins, string asmstr, list<dag> pattern>
+      : InstVAX<outs, ins, asmstr, pattern> {
+      dag Op = (ascend op);
 }
 
 class VAXAddrMode<bits<4> mode> {
