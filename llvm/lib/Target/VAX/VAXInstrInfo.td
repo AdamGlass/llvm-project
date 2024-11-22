@@ -16,20 +16,26 @@
 
 include "VAXInstrFormats.td"
 
+// VAX specific DAG Nodes
+
+def VAXRet : SDNode<"VAXISD::RET", SDTNone,
+                      [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
+
 //
 // Source: VAX Architecture Reference Manual, '87
 //
+
+class VAXSize<int Size> {
+      string Name =  !cond(!eq(Size, 8)  :"b",
+                           !eq(Size, 16) :"w",
+                           !eq(Size, 32) :"l");
+}
 
 // 
 // Integer Arithemtic and Logical Instructions
 //
 
 // ADAWI - Add Aligned Word Interlocked
-
-def AddL3 : InstVAX<(outs VRegsOut:$rd),
-                    (ins VRegs:$rs1, VRegs:$rs2),
-                    "addl3 $rs1, $rs2, $rd",
-                    [(set i32:$rd, (add i32:$rs1, i32:$rs2))]>;
 
 // ADDWC - Add with Carry
 // ASH - Arithmetic Shift
@@ -41,10 +47,21 @@ def AddL3 : InstVAX<(outs VRegsOut:$rd),
 // CVT - Convert
 // DEC - Decrement
 
-def DivL3 : InstVAX<(outs VRegsOut:$rd),
-                    (ins VRegs:$rs1, VRegs:$rs2),
-                    "divl3 $rs1, $rs2, $rd",
-                    [(set i32:$rd, (sdiv i32:$rs1, i32:$rs2))]>;
+// CLR - Clear
+
+multiclass MInstVAXR<string ONAME, SDNode NODE /*, bits<8> OPCODE */> {
+  // define other variants
+
+  def ONAME#"l3" : InstVAX<(outs VRCO:$Rd),
+                          (ins VRC:$Rn, VRC:$Rm),
+                          !strconcat(ONAME, "l3", " $Rn, $Rm, $Rd"),
+                          [(set i32:$Rd, (NODE VRC:$Rn, VRC:$Rm))]>;
+}
+
+defm : MInstVAXR<"add", add>;
+defm : MInstVAXR<"div", sdiv>;
+defm : MInstVAXR<"mul", mul>;
+defm : MInstVAXR<"sub", xor>;
 
 // EDIV - Extended Divide
 // EMUL - Extended Multiply
@@ -52,33 +69,20 @@ def DivL3 : InstVAX<(outs VRegsOut:$rd),
 // MCOM - Move Complement
 // MNEG - Move Negated
 
-def MovL2 : InstVAX<(outs VRegsOut:$rd),
-                    (ins VRegs:$rs1),
+def MovL2 : InstVAX<(outs VRCO:$rd),
+                    (ins VRC:$rs1),
                     "movl3 $rs1, $rd",
                     [(set i32:$rd, i32:$rs1)]>;
 
 // MOVZ - Move Zero-Extended
 
-def MulL3 : InstVAX<(outs VRegsOut:$rd),
-                    (ins VRegs:$rs1, VRegs:$rs2),
-                    "mull3 $rs1, $rs2, $rd",
-                    [(set i32:$rd, (mul i32:$rs1, i32:$rs2))]>;
 
 // PUSHL - Push Long
 // ROTL - Rotate Long
 // SBWC - Subtract With Carry
 
-def SubL3 : InstVAX<(outs VRegsOut:$rd),
-                    (ins VRegs:$rs1, VRegs:$rs2),
-                    "subl3 $rs1, $rs2, $rd",
-                    [(set i32:$rd, (sub i32:$rs1, i32:$rs2))]>;
-
 // TST - Test
 
-def XorL3 : InstVAX<(outs VRegsOut:$rd),
-                    (ins VRegs:$rs1, VRegs:$rs2),
-                    "xorl3 $rs1, $rs2, $rd",
-                    [(set i32:$rd, (xor i32:$rs1, i32:$rs2))]>;
 
 //
 // Address Instructions
@@ -125,6 +129,10 @@ def XorL3 : InstVAX<(outs VRegsOut:$rd),
 // CALLS - Call Procedure with Stack Argument List
 // RET - return from procedure
 
+let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
+    def Ret : InstVAX<(outs), (ins), "ret", [(VAXRet)]>;
+}
+
 //
 // Miscellaneous Instructions
 //
@@ -142,7 +150,3 @@ def XorL3 : InstVAX<(outs VRegsOut:$rd),
 // Not covered - Floating Point, Queue instructions
 //
 
-// VAX specific DAG Nodes
-
-def VAXRet : SDNode<"VAXISD::RET", SDTBrind,
-                      [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
