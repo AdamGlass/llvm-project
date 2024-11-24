@@ -16,6 +16,10 @@
 
 include "VAXInstrFormats.td"
 
+def MEMdisp : Operand<i32> {
+  let MIOperandInfo = (ops VRC, i32imm);
+}
+
 // VAX specific DAG Nodes
 
 def VAXRet : SDNode<"VAXISD::RET", SDTNone,
@@ -69,10 +73,10 @@ defm : MInstVAXR<"sub", xor>;
 // MCOM - Move Complement
 // MNEG - Move Negated
 
-def MovL2 : InstVAX<(outs VRCO:$rd),
-                    (ins VRC:$rs1),
-                    "movl3 $rs1, $rd",
-                    [(set i32:$rd, i32:$rs1)]>;
+//def MovL2 : InstVAX<(outs VRCO:$rd),
+//                    (ins VRC:$rs1),
+//                    "movl3 $rs1, $rd",
+//                    [(set i32:$rd, i32:$rs1)]>;
 
 def imm6 : PatLeaf<(imm), [{
     uint32_t value = (uint32_t)N->getZExtValue();
@@ -83,11 +87,15 @@ def LDC : InstVAX<(outs VRCO:$rd),
                   (ins i32imm:$i),
                   "movl2 $i, $rd",
                   [(set i32:$rd, imm6:$i)]>;
-
-def LRD : InstVAX<(outs VRCO:$Rd),
+def LDR : InstVAX<(outs VRCO:$Rd),
                   (ins VRC:$Rs),
                   "movl2 ($Rs), $Rd",
                   [(set VRCO:$Rd, (load VRC:$Rs))]>;
+
+//def LDRD : InstVAX<(outs VRCO:$Rd),
+//                  (ins VRC:$Rs, i32imm:$i),
+//                  "movl2 something, $Rd",
+//                  [(set VRCO:$Rd, (load (add $Rs $i)))]>
 
 // MOVZ - Move Zero-Extended
 
