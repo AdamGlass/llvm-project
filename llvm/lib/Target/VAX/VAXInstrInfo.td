@@ -16,9 +16,16 @@
 
 include "VAXInstrFormats.td"
 
-def MEMdisp : Operand<i32> {
+def MEMrd : Operand<i32> {
   let MIOperandInfo = (ops VRC, i32imm);
 }
+
+def ADDRrd : ComplexPattern<i32, 2, "selectADDRrd", [frameindex], []>;
+
+def imm6 : PatLeaf<(imm), [{
+    uint32_t value = (uint32_t)N->getZExtValue();
+    return value <= 63;
+}]>;
 
 // VAX specific DAG Nodes
 
@@ -78,11 +85,6 @@ defm : MInstVAXR<"sub", xor>;
 //                    "movl3 $rs1, $rd",
 //                    [(set i32:$rd, i32:$rs1)]>;
 
-def imm6 : PatLeaf<(imm), [{
-    uint32_t value = (uint32_t)N->getZExtValue();
-    return value <= 63;
-}]>;
-
 def LDC : InstVAX<(outs VRCO:$rd),
                   (ins i32imm:$i),
                   "movl2 $i, $rd",
@@ -91,6 +93,11 @@ def LDR : InstVAX<(outs VRCO:$Rd),
                   (ins VRC:$Rs),
                   "movl2 ($Rs), $Rd",
                   [(set VRCO:$Rd, (load VRC:$Rs))]>;
+
+def LDRrd : InstVAX<(outs VRCO:$Rd),
+                    (ins MEMrd:$addr),
+                    "movl2 $addr, $Rd",
+                    [(set VRCO:$Rd, (load ADDRrd:$addr))]>;
 
 //def LDRD : InstVAX<(outs VRCO:$Rd),
 //                  (ins VRC:$Rs, i32imm:$i),
