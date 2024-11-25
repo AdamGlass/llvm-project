@@ -49,11 +49,11 @@ bool VAXFrameLowering::hasFPImpl(const MachineFunction &MF) const {
 
 void VAXFrameLowering::emitPrologue(MachineFunction &MF,
                                       MachineBasicBlock &MBB) const {
-    assert(0);
+  report_fatal_error("need to write prolog code");
+
 }
 
 void VAXFrameLowering::emitEpilogue(MachineFunction &MF,
                                      MachineBasicBlock &MBB) const {
-    assert(0);
-    return;
+  report_fatal_error("need to write epilogue code");
 }
