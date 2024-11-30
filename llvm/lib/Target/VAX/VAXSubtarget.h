@@ -56,7 +56,7 @@ public:
   const VAXSelectionDAGInfo *getSelectionDAGInfo() const override {
     return &TSInfo;
   }
-  const TargetRegisterInfo *getRegisterInfo() const override {
+  const VAXRegisterInfo *getRegisterInfo() const override {
     return &InstrInfo.getRegisterInfo();
   }
 };

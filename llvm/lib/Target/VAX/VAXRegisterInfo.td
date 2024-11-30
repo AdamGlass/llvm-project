@@ -39,4 +39,4 @@ def VRC : RegisterClass<"VAX", [i32], 32,
 
 def SR :  RegisterClass<"VAX", [i32], 32, (add PSL)>;
 
-def VRCO :  RegisterClass<"VAX", [i32], 32, (add (sub VRC, AP, FP, SP, PC, PSL))>;
+def VRCO :  RegisterClass<"VAX", [i32], 32, (add (sub VRC, SP, PC, PSL))>;
