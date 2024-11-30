@@ -21,6 +21,7 @@ namespace llvm {
   class VAXSubtarget;
 
   class VAXFrameLowering: public TargetFrameLowering {
+
   public:
     VAXFrameLowering(const VAXSubtarget &STI);
 
@@ -32,6 +33,8 @@ namespace llvm {
                       MachineBasicBlock &MBB) const override;
 
   protected:
+    const VAXSubtarget &STI;
+
     bool hasFPImpl(const MachineFunction &MF) const override;
   };
 }

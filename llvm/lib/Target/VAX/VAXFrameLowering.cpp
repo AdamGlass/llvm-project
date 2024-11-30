@@ -31,6 +31,7 @@
 
 using namespace llvm;
 
+#define DEBUG_TYPE "vaxframelowering"
 static const unsigned FramePtr = VAX::FP;
 
 //===----------------------------------------------------------------------===//
@@ -38,9 +39,8 @@ static const unsigned FramePtr = VAX::FP;
 //===----------------------------------------------------------------------===//
 
 VAXFrameLowering::VAXFrameLowering(const VAXSubtarget &sti)
-    : TargetFrameLowering(TargetFrameLowering::StackGrowsDown, Align(4), 0) {
-  // Do nothing
-}
+    : TargetFrameLowering(TargetFrameLowering::StackGrowsDown, Align(4), 0),
+      STI(sti) {}
 
 bool VAXFrameLowering::hasFPImpl(const MachineFunction &MF) const {
   return MF.getTarget().Options.DisableFramePointerElim(MF) ||
@@ -49,8 +49,19 @@ bool VAXFrameLowering::hasFPImpl(const MachineFunction &MF) const {
 
 void VAXFrameLowering::emitPrologue(MachineFunction &MF,
                                       MachineBasicBlock &MBB) const {
-  report_fatal_error("need to write prolog code");
 
+  assert(&MBB == &MF.front() && "Shrink-wrapping not yet implemented");
+  MachineFrameInfo &MFI = MF.getFrameInfo();
+  MachineBasicBlock::iterator MBBI = MBB.begin();
+  const VAXInstrInfo &TII = *STI.getInstrInfo();
+  const VAXRegisterInfo &TRI = *STI.getRegisterInfo();
+  DebugLoc DL = MBBI != MBB.end() ? MBBI->getDebugLoc() : DebugLoc();
+  MCRegister FP = TRI.getFrameRegister(MF);
+  const MCRegisterInfo *MRI = MF.getContext().getRegisterInfo();
+  uint64_t StackSize = MFI.getStackSize();
+
+  LLVM_DEBUG(dbgs() << "stack size: " << StackSize << "\n");
+  report_fatal_error("working on the prolog");
 }
 
 void VAXFrameLowering::emitEpilogue(MachineFunction &MF,
