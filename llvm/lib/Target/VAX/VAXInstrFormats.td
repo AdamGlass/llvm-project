@@ -39,6 +39,14 @@ class VAXAddrMode<bits<4> mode> {
     dag Mode = (ascend mode);
 }
 
+class PseudoInstVAX<dag outs, dag ins, string asmstr, list<dag> pattern>
+      : InstVAX<outs, ins, asmstr, pattern> {
+  let isCodeGenOnly = 1;
+  let Pattern = pattern;
+  dag Instr = (ascend);
+  let hasNoSchedulingInfo = 1;
+}
+
 def VAXRegAddr: VAXAddrMode<5>;
 def VAXIndexedAddr: VAXAddrMode<4>;
 def VAXRegDeferredAddr: VAXAddrMode<6>;

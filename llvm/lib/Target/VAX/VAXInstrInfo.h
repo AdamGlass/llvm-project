@@ -31,7 +31,13 @@ public:
   /// such, whenever a client has an instance of instruction info, it should
   /// always be able to get register info as well (through this method).
   ///
-  const TargetRegisterInfo &getRegisterInfo() const { return RI; }
+  const VAXRegisterInfo &getRegisterInfo() const { return RI; }
+
+  void loadRegFromStackSlot(MachineBasicBlock &MBB,
+                            MachineBasicBlock::iterator MI, Register DestReg,
+                            int FrameIndex, const TargetRegisterClass *RC,
+                            const TargetRegisterInfo *TRI,
+                            Register VReg) const override;
 
 #if 0
   /// isLoadFromStackSlot - If the specified machine instruction is a direct
@@ -74,12 +80,6 @@ public:
                            const TargetRegisterClass *RC,
                            const TargetRegisterInfo *TRI,
                            Register VReg) const override;
-
-  void loadRegFromStackSlot(MachineBasicBlock &MBB,
-                            MachineBasicBlock::iterator MI, Register DestReg,
-                            int FrameIndex, const TargetRegisterClass *RC,
-                            const TargetRegisterInfo *TRI,
-                            Register VReg) const override;
 
   bool reverseBranchCondition(
                           SmallVectorImpl<MachineOperand> &Cond) const override;
