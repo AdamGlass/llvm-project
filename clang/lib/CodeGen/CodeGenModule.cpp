@@ -2769,6 +2769,13 @@ void CodeGenModule::setNonAliasAttributes(GlobalDecl GD,
         GV->addAttribute("rodata-section", SA->getName());
       if (auto *SA = D->getAttr<PragmaClangRelroSectionAttr>())
         GV->addAttribute("relro-section", SA->getName());
+
+      if (auto *SA = D->getAttr<PragmaMSBSSSectionAttr>())
+        GV->addAttribute("bss-section", SA->getName());
+      if (auto *SA = D->getAttr<PragmaMSDataSectionAttr>())
+        GV->addAttribute("data-section", SA->getName());
+      if (auto *SA = D->getAttr<PragmaMSConstSectionAttr>())
+        GV->addAttribute("rodata-section", SA->getName());
     }
 
     if (auto *F = dyn_cast<llvm::Function>(GO)) {

@@ -846,8 +846,8 @@ void Sema::ActOnPragmaMSSeg(SourceLocation PragmaLocation,
                             llvm::StringRef StackSlotLabel,
                             StringLiteral *SegmentName,
                             llvm::StringRef PragmaName) {
-  PragmaStack<StringLiteral *> *Stack =
-    llvm::StringSwitch<PragmaStack<StringLiteral *> *>(PragmaName)
+  PragmaStack<std::string> *Stack =
+      llvm::StringSwitch<PragmaStack<std::string> *>(PragmaName)
         .Case("data_seg", &DataSegStack)
         .Case("bss_seg", &BSSSegStack)
         .Case("const_seg", &ConstSegStack)
@@ -864,7 +864,11 @@ void Sema::ActOnPragmaMSSeg(SourceLocation PragmaLocation,
       Diag(PragmaLocation, diag::warn_attribute_section_drectve) << PragmaName;
   }
 
-  Stack->Act(PragmaLocation, Action, StackSlotLabel, SegmentName);
+  if (SegmentName) {
+    Stack->Act(PragmaLocation, Action, StackSlotLabel, std::string(SegmentName->getString()));
+  } else {
+    Stack->Act(PragmaLocation, Action, StackSlotLabel, std::string(""));
+  }
 }
 
 /// Called on well formed \#pragma strict_gs_check().

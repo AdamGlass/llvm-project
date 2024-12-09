@@ -3076,6 +3076,30 @@ def PragmaClangRelroSection : InheritableAttr {
   let Documentation = [InternalOnly];
 }
 
+def PragmaMSBSSSection : InheritableAttr {
+  // This attribute has no spellings as it is only ever created implicitly.
+  let Spellings = [];
+  let Args = [StringArgument<"Name">];
+  let Subjects = SubjectList<[GlobalVar], ErrorDiag>;
+  let Documentation = [InternalOnly];
+}
+
+def PragmaMSDataSection : InheritableAttr {
+  // This attribute has no spellings as it is only ever created implicitly.
+  let Spellings = [];
+  let Args = [StringArgument<"Name">];
+  let Subjects = SubjectList<[GlobalVar], ErrorDiag>;
+  let Documentation = [InternalOnly];
+}
+
+def PragmaMSConstSection : InheritableAttr {
+  // This attribute has no spellings as it is only ever created implicitly.
+  let Spellings = [];
+  let Args = [StringArgument<"Name">];
+  let Subjects = SubjectList<[GlobalVar], ErrorDiag>;
+  let Documentation = [InternalOnly];
+}
+
 def StrictFP : InheritableAttr {
   // This attribute has no spellings as it is only ever created implicitly.
   // Function uses strict floating point operations.
