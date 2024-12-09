@@ -1645,10 +1645,10 @@ public:
   };
   SmallVector<AlignPackIncludeState, 8> AlignPackIncludeStack;
   // Segment #pragmas.
-  PragmaStack<StringLiteral *> DataSegStack;
-  PragmaStack<StringLiteral *> BSSSegStack;
-  PragmaStack<StringLiteral *> ConstSegStack;
-  PragmaStack<StringLiteral *> CodeSegStack;
+  PragmaStack<std::string> DataSegStack;
+  PragmaStack<std::string> BSSSegStack;
+  PragmaStack<std::string> ConstSegStack;
+  PragmaStack<std::string> CodeSegStack;
 
   // #pragma strict_gs_check.
   PragmaStack<bool> StrictGuardStackCheckStack;
