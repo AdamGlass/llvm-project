@@ -1855,6 +1855,7 @@ public:
                     NamedDecl *TheDecl);
   bool UnifySection(StringRef SectionName, int SectionFlags,
                     SourceLocation PragmaSectionLocation);
+  void AttachSectionFlags(VarDecl *VarDecl, StringRef SectionName);
 
   /// Called on well formed \#pragma bss_seg/data_seg/const_seg/code_seg.
   void ActOnPragmaMSSeg(SourceLocation PragmaLocation,

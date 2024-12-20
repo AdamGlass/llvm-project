@@ -3032,6 +3032,14 @@ def Section : InheritableAttr {
   let Documentation = [SectionDocs];
 }
 
+def SectionFlags : InheritableAttr {
+  let Spellings = [];
+  let Args = [IntArgument<"Flags">];
+  let Subjects =
+      SubjectList<[ GlobalVar ], ErrorDiag>;
+  let Documentation = [SectionDocs];
+}
+
 // This is used for `__declspec(code_seg("segname"))`, but not for
 // `#pragma code_seg("segname")`.
 def CodeSeg : InheritableAttr {

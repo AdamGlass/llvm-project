@@ -5669,11 +5669,9 @@ void CodeGenModule::EmitGlobalVarDefinition(const VarDecl *D,
                    D->getType().isConstantStorage(getContext(), true, true)));
 
   // If it is in a read-only section, mark it 'constant'.
-  if (const SectionAttr *SA = D->getAttr<SectionAttr>()) {
-    const ASTContext::SectionInfo &SI = Context.SectionInfos[SA->getName()];
-    if ((SI.SectionFlags & ASTContext::PSF_Write) == 0)
+  if (const SectionFlagsAttr *SFA = D->getAttr<SectionFlagsAttr>())
+    if ((SFA->getFlags() & ASTContext::PSF_Write) == 0)
       GV->setConstant(true);
-  }
 
   CharUnits AlignVal = getContext().getDeclAlign(D);
   // Check for alignment specifed in an 'omp allocate' directive.
