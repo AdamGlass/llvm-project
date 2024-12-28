@@ -2433,6 +2433,24 @@ static bool checkStrictFP(const Function &Caller, const Function &Callee) {
          Caller.getAttributes().hasFnAttr(Attribute::StrictFP);
 }
 
+static bool checkSections(const Function &Caller, const Function &Callee) {
+  // Do not inline across section boundaries as sections have unknown execution
+  // requirements
+
+  // no sections, no issue
+  if (!Caller.hasSection() && !Callee.hasSection()) {
+    return true;
+  }
+
+  // matching sections, ok
+  if (!Caller.getSection().compare(Callee.getSection())) {
+    return true;
+  }
+
+  // mismatched sections, prevent inlining
+  return false;
+}
+
 template<typename AttrClass>
 static bool isEqual(const Function &Caller, const Function &Callee) {
   return Caller.getFnAttribute(AttrClass::getKind()) ==
