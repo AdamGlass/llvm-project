@@ -15,15 +15,15 @@
 
 #include "VAXSubtarget.h"
 #include "llvm/Analysis/TargetTransformInfo.h"
+#include "llvm/CodeGen/CodeGenTargetMachineImpl.h"
 #include "llvm/Support/CodeGen.h"
-#include "llvm/Target/TargetMachine.h"
 #include <memory>
 #include <optional>
 
 namespace llvm {
 class StringRef;
 
-class VAXTargetMachine : public LLVMTargetMachine {
+class VAXTargetMachine : public CodeGenTargetMachineImpl {
   std::unique_ptr<TargetLoweringObjectFile> TLOF;
   VAXSubtarget Subtarget;
 
