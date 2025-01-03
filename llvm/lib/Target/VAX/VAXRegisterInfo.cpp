@@ -47,8 +47,8 @@ VAXRegisterInfo::VAXRegisterInfo()
 const MCPhysReg *
 VAXRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   static const MCPhysReg CalleeSavedRegs[] = {
-    VAX::R6, VAX::R7, VAX::R8, VAX::R9,
-    VAX::R10, VAX::R11
+    VAX::R2, VAX::R3, VAX::R4, VAX::R5, VAX::R6,
+    VAX::R7, VAX::R8, VAX::R9, VAX::R10, VAX::R11
   };
 
   return CalleeSavedRegs;
