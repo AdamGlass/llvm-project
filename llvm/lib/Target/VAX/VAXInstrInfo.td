@@ -186,7 +186,7 @@ let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
 // FAUX Load/Store instructions
 //
 
-//def RegMask : PseudoInstVAX<(outs),
-//                            (ins i32imm:$i),
-//                            "mask $i",
-//                            [(VAXRegMask $i)]>;
+def RegMask : PseudoInstVAX<(outs),
+                            (ins i32imm:$i),
+                            ".error",
+                            []>;
