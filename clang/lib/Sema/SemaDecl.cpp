@@ -14589,8 +14589,8 @@ void Sema::CheckCompleteVariableDeclaration(VarDecl *var) {
     // Apply the init_seg attribute if this has an initializer.  If the
     // initializer turns out to not be dynamic, we'll end up ignoring this
     // attribute.
-    if (CurInitSeg && var->getInit())
-      var->addAttr(InitSegAttr::CreateImplicit(Context, CurInitSeg->getString(),
+    if (!CurInitSeg.empty() && var->getInit())
+      var->addAttr(InitSegAttr::CreateImplicit(Context, CurInitSeg,
                                                CurInitSegLoc));
   }
 

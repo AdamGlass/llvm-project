@@ -979,6 +979,10 @@ private:
   llvm::SmallVector<PragmaAlignPackStackEntry, 2> PragmaAlignPackStack;
   llvm::SmallVector<std::string, 2> PragmaAlignPackStrings;
 
+  // The pragma init_seg() state.
+  std::string CurInitSeg = "";
+  SourceLocation CurInitSegLoc;
+
   /// The OpenCL extension settings.
   OpenCLOptions OpenCLExtensions;
 

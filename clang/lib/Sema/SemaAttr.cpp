@@ -917,7 +917,7 @@ void Sema::ActOnPragmaMSInitSeg(SourceLocation PragmaLocation,
   // There's no stack to maintain, so we just have a current section.  When we
   // see the default section, reset our current section back to null so we stop
   // tacking on unnecessary attributes.
-  CurInitSeg = SegmentName->getString() == ".CRT$XCU" ? nullptr : SegmentName;
+  CurInitSeg = SegmentName->getString() == ".CRT$XCU" ? "" : SegmentName->getString();
   CurInitSegLoc = PragmaLocation;
 
   // Should call UnifySection but with what flags?

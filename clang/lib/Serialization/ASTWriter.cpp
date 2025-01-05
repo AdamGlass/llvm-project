@@ -4854,6 +4854,19 @@ void ASTWriter::WriteFloatControlPragmaOptions(Sema &SemaRef) {
   Stream.EmitRecord(FLOAT_CONTROL_PRAGMA_OPTIONS, Record);
 }
 
+void ASTWriter::WriteInitSection(Sema &SemaRef) {
+  if (WritingModule)
+    return;
+
+  if (!SemaRef.CurInitSeg.empty()) {
+    RecordData Record;
+
+    AddString(SemaRef.CurInitSeg, Record);
+    AddSourceLocation(SemaRef.CurInitSegLoc, Record);
+    Stream.EmitRecord(CURRENT_INIT_SECTION, Record);
+  }
+}
+
 /// Write Sema's collected list of declarations with unverified effects.
 void ASTWriter::WriteDeclsWithEffectsToVerify(Sema &SemaRef) {
   if (SemaRef.DeclsWithEffectsToVerify.empty())
@@ -5857,6 +5870,7 @@ ASTFileSignature ASTWriter::WriteASTCore(Sema *SemaPtr, StringRef isysroot,
       WriteOptimizePragmaOptions(*SemaPtr);
       WriteMSStructPragmaOptions(*SemaPtr);
       WriteMSPointersToMembersPragmaOptions(*SemaPtr);
+      WriteInitSection(*SemaPtr);
     }
     WritePackPragmaOptions(*SemaPtr);
     WriteFloatControlPragmaOptions(*SemaPtr);
