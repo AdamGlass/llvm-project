@@ -733,6 +733,9 @@ enum ASTRecordTypes {
   /// Record code for Sema's vector of functions/blocks with effects to
   /// be verified.
   DECLS_WITH_EFFECTS_TO_VERIFY = 72,
+
+  // Record for for current init section
+  CURRENT_INIT_SECTION = 73,
 };
 
 /// Record types used within a source manager block.
