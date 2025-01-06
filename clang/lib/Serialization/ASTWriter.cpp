@@ -4882,6 +4882,34 @@ void ASTWriter::WriteSectionInfos(Sema &SemaRef) {
   Stream.EmitRecord(SECTION_INFOS, Record);
 }
 
+void ASTWriter::WriteSegmentStack(Sema::PragmaStack<std::string> &SegmentStack, StringRef SegmentName) {
+  // Don't serialize pragma float_control state for modules,
+  // since it should only take effect on a per-submodule basis.
+  if (WritingModule)
+    return;
+
+  RecordData Record;
+  AddString(SegmentName, Record);
+  AddString(SegmentStack.CurrentValue, Record);
+  AddSourceLocation(SegmentStack.CurrentPragmaLocation, Record);
+  Record.push_back(SegmentStack.Stack.size());
+  for (const auto &StackEntry : SegmentStack.Stack) {
+    AddString(StackEntry.Value, Record);
+    AddSourceLocation(StackEntry.PragmaLocation, Record);
+    AddSourceLocation(StackEntry.PragmaPushLocation, Record);
+    AddString(StackEntry.StackSlotLabel, Record);
+  }
+  Stream.EmitRecord(SEGMENT_PRAGMA_OPTIONS, Record);
+}
+
+/// Write the state of 'segment stacks' at the end of the module.
+void ASTWriter::WriteSegmentStacks(Sema &SemaRef) {
+  WriteSegmentStack(SemaRef.DataSegStack, "data");
+  WriteSegmentStack(SemaRef.BSSSegStack, "bss");
+  WriteSegmentStack(SemaRef.ConstSegStack, "const");
+  WriteSegmentStack(SemaRef.CodeSegStack, "code");
+}
+
 /// Write Sema's collected list of declarations with unverified effects.
 void ASTWriter::WriteDeclsWithEffectsToVerify(Sema &SemaRef) {
   if (SemaRef.DeclsWithEffectsToVerify.empty())
@@ -5887,6 +5915,7 @@ ASTFileSignature ASTWriter::WriteASTCore(Sema *SemaPtr, StringRef isysroot,
       WriteMSPointersToMembersPragmaOptions(*SemaPtr);
       WriteInitSection(*SemaPtr);
       WriteSectionInfos(*SemaPtr);
+      WriteSegmentStacks(*SemaPtr);
     }
     WritePackPragmaOptions(*SemaPtr);
     WriteFloatControlPragmaOptions(*SemaPtr);

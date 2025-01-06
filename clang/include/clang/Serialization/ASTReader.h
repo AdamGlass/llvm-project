@@ -991,6 +991,25 @@ private:
   };
   llvm::SmallVector<SectionInfo, 2> SectionInfos;
 
+  struct PragmaSegmentStackEntry {
+    std::string Value;
+    SourceLocation Location;
+    SourceLocation PushLocation;
+    StringRef SlotLabel;
+  };
+
+  struct PragmaSegmentStackState {
+    std::optional<std::string> PragmaCurrentValue;
+    SourceLocation PragmaCurrentLocation;
+    llvm::SmallVector<PragmaSegmentStackEntry, 2> PragmaStack;
+    llvm::SmallVector<std::string, 2> PragmaStrings;
+  };
+
+  PragmaSegmentStackState PragmaDataSegmentStackState;
+  PragmaSegmentStackState PragmaBSSSegmentStackState;
+  PragmaSegmentStackState PragmaConstSegmentStackState;
+  PragmaSegmentStackState PragmaCodeSegmentStackState;
+
   /// The OpenCL extension settings.
   OpenCLOptions OpenCLExtensions;
 
@@ -1881,6 +1900,8 @@ public:
 
   /// Initializes the ASTContext
   void InitializeContext();
+
+  void UpdateSemaPragmaSegment(PragmaSegmentStackState &StackState, Sema::PragmaStack<std::string> &PragmaStack);
 
   /// Update the state of Sema after loading some additional modules.
   void UpdateSema();
