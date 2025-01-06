@@ -983,6 +983,14 @@ private:
   std::string CurInitSeg = "";
   SourceLocation CurInitSegLoc;
 
+  // The section info state
+  struct SectionInfo {
+    std::string SectionName;
+    SourceLocation PragmaSectionLocation;
+    int SectionFlags;
+  };
+  llvm::SmallVector<SectionInfo, 2> SectionInfos;
+
   /// The OpenCL extension settings.
   OpenCLOptions OpenCLExtensions;
 

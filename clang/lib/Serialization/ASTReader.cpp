@@ -4207,7 +4207,7 @@ llvm::Error ASTReader::ReadASTBlock(ModuleFile &F,
         DeclsToCheckForDeferredDiags.insert(ReadDeclID(F, Record, I));
       break;
 
-    case CURRENT_INIT_SECTION:
+    case CURRENT_INIT_SECTION: {
       if (Record.size() < 2)
         return llvm::createStringError(std::errc::illegal_byte_sequence,
                                        "invalid init_seg record");
@@ -4218,6 +4218,26 @@ llvm::Error ASTReader::ReadASTBlock(ModuleFile &F,
       CurInitSeg = SectionName;
       CurInitSegLoc = PragmaLocation;
       break;
+    }
+
+    case SECTION_INFOS: {
+      if (Record.size() < 1)
+        return llvm::createStringError(std::errc::illegal_byte_sequence,
+                                       "invalid section infos record");
+      unsigned Idx = 0;
+      unsigned NumEntries = Record[Idx++];
+      SectionInfos.clear();
+      for (unsigned i = 0 ; i < NumEntries; i++) {
+        SectionInfo Entry;
+
+        Entry.SectionName = ReadString(Record, Idx);
+        Entry.PragmaSectionLocation  = ReadSourceLocation(F, Record[Idx++]);
+        Entry.SectionFlags = Record[Idx++];
+        SectionInfos.push_back(Entry);
+      }
+      break;
+    }
+
     }
   }
 }
@@ -5371,6 +5391,12 @@ void ASTReader::InitializeContext() {
       // This updates visibility for Preprocessor only. For Sema, which can be
       // nullptr here, we do the same later, in UpdateSema().
     }
+  }
+
+  // Merge section info with existing SectionInfos
+  for (const auto &Entry : llvm::ArrayRef(SectionInfos)) {
+    Context.SectionInfos[Entry.SectionName] =
+        ASTContext::SectionInfo(nullptr, Entry.PragmaSectionLocation, Entry.SectionFlags);
   }
 
   // Hand off these modules to Sema.

@@ -4864,6 +4864,24 @@ void ASTWriter::WriteInitSection(Sema &SemaRef) {
   Stream.EmitRecord(CURRENT_INIT_SECTION, Record);
 }
 
+void ASTWriter::WriteSectionInfos(Sema &SemaRef) {
+  if (WritingModule)
+    return;
+
+  ASTContext &Context = SemaRef.Context;
+  RecordData Record;
+  Record.push_back(Context.SectionInfos.size());
+  for (const auto &SectionName : Context.SectionInfos.keys()) {
+    auto &SI = Context.SectionInfos[SectionName];
+
+    // Avoid writing/restoring associated NamedDecl
+    AddString(SectionName, Record);
+    AddSourceLocation(SI.PragmaSectionLocation, Record);
+    Record.push_back(SI.SectionFlags);
+  }
+  Stream.EmitRecord(SECTION_INFOS, Record);
+}
+
 /// Write Sema's collected list of declarations with unverified effects.
 void ASTWriter::WriteDeclsWithEffectsToVerify(Sema &SemaRef) {
   if (SemaRef.DeclsWithEffectsToVerify.empty())
@@ -5868,6 +5886,7 @@ ASTFileSignature ASTWriter::WriteASTCore(Sema *SemaPtr, StringRef isysroot,
       WriteMSStructPragmaOptions(*SemaPtr);
       WriteMSPointersToMembersPragmaOptions(*SemaPtr);
       WriteInitSection(*SemaPtr);
+      WriteSectionInfos(*SemaPtr);
     }
     WritePackPragmaOptions(*SemaPtr);
     WriteFloatControlPragmaOptions(*SemaPtr);

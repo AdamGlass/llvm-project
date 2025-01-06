@@ -738,8 +738,12 @@ enum ASTRecordTypes {
   CXX_ADDED_TEMPLATE_SPECIALIZATION = 74,
 
   CXX_ADDED_TEMPLATE_PARTIAL_SPECIALIZATION = 75,
+
   // Record for for current init section
   CURRENT_INIT_SECTION = 76,
+
+  // Record code for the SectionInfos table that records the known sections
+  SECTION_INFOS = 77,
 };
 
 /// Record types used within a source manager block.
