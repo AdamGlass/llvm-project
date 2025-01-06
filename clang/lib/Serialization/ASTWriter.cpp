@@ -4858,13 +4858,9 @@ void ASTWriter::WriteInitSection(Sema &SemaRef) {
   if (WritingModule)
     return;
 
-  if (!SemaRef.CurInitSeg.empty()) {
-    RecordData Record;
-
-    AddString(SemaRef.CurInitSeg, Record);
-    AddSourceLocation(SemaRef.CurInitSegLoc, Record);
-    Stream.EmitRecord(CURRENT_INIT_SECTION, Record);
-  }
+  AddString(SemaRef.CurInitSeg, Record);
+  AddSourceLocation(SemaRef.CurInitSegLoc, Record);
+  Stream.EmitRecord(CURRENT_INIT_SECTION, Record);
 }
 
 /// Write Sema's collected list of declarations with unverified effects.
