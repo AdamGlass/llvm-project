@@ -605,6 +605,7 @@ private:
   void WritePackPragmaOptions(Sema &SemaRef);
   void WriteFloatControlPragmaOptions(Sema &SemaRef);
   void WriteInitSection(Sema &SemaRef);
+  void WriteSectionInfos(Sema &SemaRef);
   void WriteDeclsWithEffectsToVerify(Sema &SemaRef);
   void WriteModuleFileExtension(Sema &SemaRef,
                                 ModuleFileExtensionWriter &Writer);

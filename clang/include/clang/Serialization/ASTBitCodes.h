@@ -736,6 +736,9 @@ enum ASTRecordTypes {
 
   // Record for for current init section
   CURRENT_INIT_SECTION = 73,
+
+  // Record code for the SectionInfos table that records the known sections
+  SECTION_INFOS = 74,
 };
 
 /// Record types used within a source manager block.
