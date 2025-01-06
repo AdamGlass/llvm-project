@@ -4669,6 +4669,7 @@ void ASTWriter::WriteInitSection(Sema &SemaRef) {
   if (WritingModule)
     return;
 
+  RecordData Record;
   AddString(SemaRef.CurInitSeg, Record);
   AddSourceLocation(SemaRef.CurInitSegLoc, Record);
   Stream.EmitRecord(CURRENT_INIT_SECTION, Record);
