@@ -2434,21 +2434,41 @@ static bool checkStrictFP(const Function &Caller, const Function &Callee) {
 }
 
 static bool checkSections(const Function &Caller, const Function &Callee) {
-  // Do not inline across section boundaries as sections have unknown execution
-  // requirements
+  // Implement MSVC compatible cross-section inlining rules
+  StringRef CallerSection = Caller.getSection();
+  StringRef CalleeSection = Callee.getSection();
 
-  // no sections, no issue
-  if (!Caller.hasSection() && !Callee.hasSection()) {
+  // sections match, inline ok
+  if (!CallerSection.compare(CalleeSection))
     return true;
-  }
 
-  // matching sections, ok
-  if (!Caller.getSection().compare(Callee.getSection())) {
-    return true;
-  }
+  bool isCallerPaged = CallerSection.starts_with("PAGE");
+  bool isCalleePaged = CalleeSection.starts_with("PAGE");
 
-  // mismatched sections, prevent inlining
-  return false;
+  // Prevent inlining of non-paged code into a paged caller
+  // Prevent inlining of paged code into non-paged caller
+  // Section names are compared only before the '$' separator if present
+
+  if (isCallerPaged) {
+    size_t CallerComparable = CallerSection.size();
+    size_t CalleeComparable = CalleeSection.size();
+    size_t CallerSep = CallerSection.find('$');
+    size_t CalleeSep = CalleeSection.find('$');
+
+    if (CallerSep != StringRef::npos)
+      CallerComparable = CallerSep;
+    if (CalleeSep != StringRef::npos)
+      CalleeComparable = CalleeSep;
+    if (CallerComparable != CalleeComparable)
+      return false;
+
+    StringRef CallerComparableSection = CallerSection.substr(0, CallerComparable);
+    StringRef CalleeComparableSection = CalleeSection.substr(0, CallerComparable);
+    return !CallerComparableSection.compare(CalleeComparableSection);
+  } else if (isCalleePaged)
+    return false;
+
+  return true;
 }
 
 template<typename AttrClass>
