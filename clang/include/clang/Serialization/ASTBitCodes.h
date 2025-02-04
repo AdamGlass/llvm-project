@@ -724,6 +724,15 @@ enum ASTRecordTypes {
 
   /// Record code for vtables to emit.
   VTABLES_TO_EMIT = 70,
+
+  // Record for for current init section
+  CURRENT_INIT_SECTION = 71,
+
+  // Record code for the SectionInfos table that records the known sections
+  SECTION_INFOS = 72,
+
+  // Record code for the pragma segment stacks
+  SEGMENT_PRAGMA_OPTIONS = 73,
 };
 
 /// Record types used within a source manager block.
