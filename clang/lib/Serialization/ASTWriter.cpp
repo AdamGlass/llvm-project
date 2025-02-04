@@ -5639,18 +5639,16 @@ ASTFileSignature ASTWriter::WriteASTCore(Sema &SemaRef, StringRef isysroot,
   }
 
   WriteObjCCategories();
-  if (SemaPtr) {
-    if (!WritingModule) {
-      WriteOptimizePragmaOptions(*SemaPtr);
-      WriteMSStructPragmaOptions(*SemaPtr);
-      WriteMSPointersToMembersPragmaOptions(*SemaPtr);
-      WriteInitSection(*SemaPtr);
-      WriteSectionInfos(*SemaPtr);
-      WriteSegmentStacks(*SemaPtr);
-    }
-    WritePackPragmaOptions(*SemaPtr);
-    WriteFloatControlPragmaOptions(*SemaPtr);
+  if (!WritingModule) {
+    WriteOptimizePragmaOptions(SemaRef);
+    WriteMSStructPragmaOptions(SemaRef);
+    WriteMSPointersToMembersPragmaOptions(SemaRef);
+    WriteInitSection(SemaRef);
+    WriteSectionInfos(SemaRef);
+    WriteSegmentStacks(SemaRef);
   }
+  WritePackPragmaOptions(SemaRef);
+  WriteFloatControlPragmaOptions(SemaRef);
 
   // Some simple statistics
   RecordData::value_type Record[] = {
