@@ -16,7 +16,7 @@
 #include "llvm/CodeGen/GlobalISel/GIMatchTableExecutorImpl.h"
 #include "llvm/CodeGen/GlobalISel/InstructionSelector.h"
 #include "llvm/CodeGen/GlobalISel/MachineIRBuilder.h"
-#include "llvm/IR/IntrinsicsVAX.h"
+//#include "llvm/IR/IntrinsicsVAX.h"
 
 #define DEBUG_TYPE "vax-gisel"
 

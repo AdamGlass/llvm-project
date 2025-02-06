@@ -15,15 +15,21 @@
 #define LLVM_LIB_TARGET_VAX_VAX_H
 
 #include "MCTargetDesc/VAXMCTargetDesc.h"
+#include "llvm/IR/Instructions.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/Pass.h"
 #include "llvm/PassRegistry.h"
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
   class FunctionPass;
   class ModulePass;
+  class InstructionSelector;
   class PassRegistry;
   class TargetMachine;
   class VAXTargetMachine;
+  class VAXRegisterBankInfo;
+  class VAXSubtarget;
 
   void initializeVAXLowerThreadLocalPass(PassRegistry &p);
 
@@ -32,6 +38,13 @@ namespace llvm {
                                    CodeGenOptLevel OptLevel);
   ModulePass *createVAXLowerThreadLocalPass();
   void initializeVAXDAGToDAGISelLegacyPass(PassRegistry &);
+
+  InstructionSelector *createVAXInstructionSelector(const VAXTargetMachine &,
+                                                    const VAXSubtarget &,
+                                                    const VAXRegisterBankInfo &);
+
+
+
 } // end namespace llvm;
 
 #endif

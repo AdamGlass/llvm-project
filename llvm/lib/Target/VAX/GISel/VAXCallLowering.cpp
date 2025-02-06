@@ -28,7 +28,7 @@ bool VAXCallLowering::lowerReturn(MachineIRBuilder &MIRBuilder,
                                   Register SwiftErrorVReg) const {
   if (!VRegs.empty())
     return false;
-  MIRBuilder.buildInstr(VAX::RET);
+  MIRBuilder.buildInstr(VAX::Ret);
   return true;
 }
 

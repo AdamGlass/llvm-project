@@ -12,6 +12,7 @@
 
 #include "VAXSubtarget.h"
 #include "VAX.h"
+#include "VAXTargetMachine.h"
 #include "VAXInstrInfo.h"
 #include "VAXRegisterInfo.h"
 #include "MCTargetDesc/VAXMCTargetDesc.h"

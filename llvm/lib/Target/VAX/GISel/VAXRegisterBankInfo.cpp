@@ -10,6 +10,7 @@
 //===----------------------------------------------------------------------===//
 
 #include "VAXRegisterBankInfo.h"
+#include "llvm/ADT/Twine.h"
 
 #define DEBUG_TYPE "vax-reg-bank-info"
 

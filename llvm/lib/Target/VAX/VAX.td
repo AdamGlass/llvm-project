@@ -23,6 +23,7 @@ include "llvm/Target/Target.td"
 include "VAXRegisterInfo.td"
 include "VAXInstrInfo.td"
 include "VAXCallingConv.td"
+include "GISel/VAXRegisterBanks.td"
 
 def VAXInstrInfo : InstrInfo;
 
