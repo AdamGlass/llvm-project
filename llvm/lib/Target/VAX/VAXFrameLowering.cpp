@@ -61,10 +61,8 @@ void VAXFrameLowering::emitPrologue(MachineFunction &MF,
   uint64_t StackSize = MFI.getStackSize();
 
   LLVM_DEBUG(dbgs() << "stack size: " << StackSize << "\n");
-  report_fatal_error("working on the prolog");
 }
 
 void VAXFrameLowering::emitEpilogue(MachineFunction &MF,
                                      MachineBasicBlock &MBB) const {
-  report_fatal_error("need to write epilogue code");
 }

@@ -27,6 +27,9 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Target/TargetMachine.h"
+#include "GISel/VAXCallLowering.h"
+#include "GISel/VAXLegalizerInfo.h"
+#include "GISel/VAXRegisterBankInfo.h"
 #include <algorithm>
 #include <cassert>
 #include <map>
@@ -45,4 +48,29 @@ void VAXSubtarget::anchor() { }
 VAXSubtarget::VAXSubtarget(const Triple &TT, const std::string &CPU,
                                const std::string &FS, const TargetMachine &TM)
     : VAXGenSubtargetInfo(TT, CPU, /*TuneCPU*/ CPU, FS), FrameLowering(*this),
-      TLInfo(TM, *this) {}
+      TLInfo(TM, *this) {
+
+  CallLoweringInfo.reset(new VAXCallLowering(*getTargetLowering()));
+  Legalizer.reset(new VAXLegalizerInfo(*this));
+  auto *RBI = new VAXRegisterBankInfo(*getRegisterInfo());
+  RegBankInfo.reset(RBI);
+
+  InstSelector.reset(createVAXInstructionSelector(
+      *static_cast<const VAXTargetMachine *>(&TM), *this, *RBI));
+}
+
+const CallLowering *VAXSubtarget::getCallLowering() const {
+  return CallLoweringInfo.get();
+}
+
+InstructionSelector *VAXSubtarget::getInstructionSelector() const {
+  return InstSelector.get();
+}
+
+const LegalizerInfo *VAXSubtarget::getLegalizerInfo() const {
+  return Legalizer.get();
+}
+
+const RegisterBankInfo *VAXSubtarget::getRegBankInfo() const {
+  return RegBankInfo.get();
+}

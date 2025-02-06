@@ -13,6 +13,10 @@
 #include "MCTargetDesc/VAXMCTargetDesc.h"
 #include "TargetInfo/VAXTargetInfo.h"
 #include "VAX.h"
+#include "llvm/CodeGen/GlobalISel/IRTranslator.h"
+#include "llvm/CodeGen/GlobalISel/InstructionSelect.h"
+#include "llvm/CodeGen/GlobalISel/Legalizer.h"
+#include "llvm/CodeGen/GlobalISel/RegBankSelect.h"
 #include "VAXMachineFunctionInfo.h"
 #include "VAXTargetTransformInfo.h"
 #include "llvm/ADT/STLExtras.h"
@@ -88,6 +92,12 @@ public:
   bool addPreISel() override;
   bool addInstSelector() override;
   void addPreEmitPass() override;
+
+  bool addIRTranslator() override;
+  bool addLegalizeMachineIR() override;
+  bool addRegBankSelect() override;
+  bool addGlobalInstructionSelect() override;
+
 };
 
 } // end anonymous namespace
@@ -114,11 +124,32 @@ bool VAXPassConfig::addInstSelector() {
 void VAXPassConfig::addPreEmitPass() {
 }
 
+bool VAXPassConfig::addIRTranslator() {
+  addPass(new IRTranslator());
+  return false;
+}
+
+bool VAXPassConfig::addLegalizeMachineIR() {
+  addPass(new Legalizer());
+  return false;
+}
+
+bool VAXPassConfig::addRegBankSelect() {
+  addPass(new RegBankSelect());
+  return false;
+}
+
+bool VAXPassConfig::addGlobalInstructionSelect() {
+  addPass(new InstructionSelect(getOptLevel()));
+  return false;
+}
+
 // Force static initialization.
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeVAXTarget() {
   RegisterTargetMachine<VAXTargetMachine> X(getTheVAXTarget());
   PassRegistry &PR = *PassRegistry::getPassRegistry();
-  initializeVAXDAGToDAGISelLegacyPass(PR);
+  initializeGlobalISel(PR);
+  //  initializeVAXDAGToDAGISelLegacyPass(PR);
 }
 
 MachineFunctionInfo *VAXTargetMachine::createMachineFunctionInfo(

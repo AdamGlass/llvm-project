@@ -87,7 +87,7 @@ void VAXAsmPrinter::emitInstruction(const MachineInstr *MI) {
   SmallString<128> Str;
   raw_svector_ostream O(Str);
 
-  O << "RAW INSTRUCTION";
+  MI->print(O);
   OutStreamer->emitRawText(O.str());
   //  EmitToStreamer(*OutStreamer, TmpInst);
 }
