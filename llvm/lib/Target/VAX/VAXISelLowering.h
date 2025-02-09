@@ -15,6 +15,7 @@
 #define LLVM_LIB_TARGET_VAX_VAXISELLOWERING_H
 
 #include "VAX.h"
+#include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/SelectionDAG.h"
 #include "llvm/CodeGen/TargetLowering.h"
 
@@ -48,6 +49,9 @@ namespace llvm {
     /// getTargetNodeName - This method returns the name of a target specific
     //  DAG node.
     const char *getTargetNodeName(unsigned Opcode) const override;
+
+    CCAssignFn *getCCAssignFn(CallingConv::ID CC, bool Return,
+                              bool IsVarArg) const;
 
   private:
     SDValue

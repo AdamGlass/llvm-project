@@ -199,6 +199,14 @@ VAXTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
                      ArrayRef<SDValue>(&RetOps[0], RetOps.size()));
 }
 
+CCAssignFn *VAXTargetLowering::getCCAssignFn(CallingConv::ID CC, bool Return,
+                                              bool IsVarArg) const {
+  if (Return)
+    return RetCC_VAX;
+  else
+    return CC_VAX;
+}
+
 //===----------------------------------------------------------------------===//
 //                           VAX Inline Assembly Support
 //===----------------------------------------------------------------------===//

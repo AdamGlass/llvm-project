@@ -72,6 +72,7 @@ VAXTargetMachine::VAXTargetMachine(const Target &T, const Triple &TT,
       TLOF(createTLOF()),
       Subtarget(TT, std::string(CPU), std::string(FS), *this) {
   initAsmInfo();
+  setGlobalISelAbort(GlobalISelAbortMode::Enable);
 }
 
 VAXTargetMachine::~VAXTargetMachine() = default;

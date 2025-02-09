@@ -35,3 +35,18 @@ def RetCC_VAX : CallingConv<[
   // been lowered to 2 32-bit values.
   CCIfType<[i32], CCAssignToReg<[R0, R1]>>
 ]>;
+
+def CC_VAXModern : CallingConv<[
+  // Promote i8/i16 arguments to i32.
+  CCIfType<[i8, i16], CCPromoteToType<i32>>,
+
+     /// Handles byval parameters.  What sets R1?
+  CCIfByVal<CCPassByVal<4, 4>>,
+
+  // Otherwise they are assigned to the stack in 4-byte aligned units.
+  CCIfType<[i32], CCAssignToReg<[R0, R1, R2, R3]>>,
+
+  // Otherwise they are assigned to the stack in 4-byte aligned units.
+  CCIfType<[i32],  CCAssignToStack<4, 4>>
+]>;
+
