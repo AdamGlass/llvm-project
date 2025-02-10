@@ -12,4 +12,4 @@
 //===----------------------------------------------------------------------===//
 
 /// General Purpose Registers
-def VAXRegBank : RegisterBank<"VRRB", [VRC]>;
+def GPRRegBank : RegisterBank<"GPRB", [GPRC, GPRCX]>;

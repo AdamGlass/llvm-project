@@ -45,7 +45,7 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
     : TargetLowering(TM), Subtarget(&Subtarget) {
 
   // Set up the register classes.
-  addRegisterClass(MVT::i32, &VAX::VRCRegClass);
+  addRegisterClass(MVT::i32, &VAX::GPRCRegClass);
 
   // Compute derived properties from the register classes
   computeRegisterProperties(Subtarget.getRegisterInfo());
