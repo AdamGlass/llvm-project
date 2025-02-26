@@ -2687,8 +2687,8 @@ CXXBaseSpecifier *Sema::CheckBaseSpecifier(CXXRecordDecl *Class,
     // same attribute."
     const auto *BaseCSA = BaseDecl->getAttr<CodeSegAttr>();
     const auto *DerivedCSA = Class->getAttr<CodeSegAttr>();
-    if ((DerivedCSA || BaseCSA) &&
-        (!BaseCSA || !DerivedCSA ||
+    if (BaseCSA &&
+        (!DerivedCSA ||
          BaseCSA->getName() != DerivedCSA->getName())) {
       Diag(Class->getLocation(), diag::err_mismatched_code_seg_base);
       Diag(BaseDecl->getLocation(), diag::note_base_class_specified_here)
@@ -9330,9 +9330,21 @@ bool SpecialMemberDeletionInfo::shouldDeleteForSubobjectCall(
 
   int DiagKind = -1;
 
-  if (SMOR.getKind() == Sema::SpecialMemberOverloadResult::NoMemberOrDeleted)
-    DiagKind = !Decl ? 0 : 1;
-  else if (SMOR.getKind() == Sema::SpecialMemberOverloadResult::Ambiguous)
+  if (SMOR.getKind() == Sema::SpecialMemberOverloadResult::NoMemberOrDeleted) {
+    if (CSM == CXXSpecialMemberKind::DefaultConstructor && Field &&
+        Field->getParent()->isUnion()) {
+      // [class.default.ctor]p2:
+      //   A defaulted default constructor for class X is defined as deleted if
+      //   - X is a union that has a variant member with a non-trivial default
+      //     constructor and no variant member of X has a default member
+      //     initializer
+      const auto *RD = cast<CXXRecordDecl>(Field->getParent());
+      if (!RD->hasInClassInitializer())
+        DiagKind = !Decl ? 0 : 1;
+    } else {
+      DiagKind = !Decl ? 0 : 1;
+    }
+  } else if (SMOR.getKind() == Sema::SpecialMemberOverloadResult::Ambiguous)
     DiagKind = 2;
   else if (!isAccessible(Subobj, Decl))
     DiagKind = 3;

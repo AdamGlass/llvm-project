@@ -2917,6 +2917,14 @@ def Section : InheritableAttr {
   let Documentation = [SectionDocs];
 }
 
+def SectionFlags : InheritableAttr {
+  let Spellings = [];
+  let Args = [IntArgument<"Flags">];
+  let Subjects =
+      SubjectList<[ GlobalVar ], ErrorDiag>;
+  let Documentation = [SectionDocs];
+}
+
 // This is used for `__declspec(code_seg("segname"))`, but not for
 // `#pragma code_seg("segname")`.
 def CodeSeg : InheritableAttr {
@@ -2951,6 +2959,30 @@ def PragmaClangRodataSection : InheritableAttr {
 }
 
 def PragmaClangRelroSection : InheritableAttr {
+  // This attribute has no spellings as it is only ever created implicitly.
+  let Spellings = [];
+  let Args = [StringArgument<"Name">];
+  let Subjects = SubjectList<[GlobalVar], ErrorDiag>;
+  let Documentation = [InternalOnly];
+}
+
+def PragmaMSBSSSection : InheritableAttr {
+  // This attribute has no spellings as it is only ever created implicitly.
+  let Spellings = [];
+  let Args = [StringArgument<"Name">];
+  let Subjects = SubjectList<[GlobalVar], ErrorDiag>;
+  let Documentation = [InternalOnly];
+}
+
+def PragmaMSDataSection : InheritableAttr {
+  // This attribute has no spellings as it is only ever created implicitly.
+  let Spellings = [];
+  let Args = [StringArgument<"Name">];
+  let Subjects = SubjectList<[GlobalVar], ErrorDiag>;
+  let Documentation = [InternalOnly];
+}
+
+def PragmaMSConstSection : InheritableAttr {
   // This attribute has no spellings as it is only ever created implicitly.
   let Spellings = [];
   let Args = [StringArgument<"Name">];
@@ -4717,5 +4749,12 @@ def ClspvLibclcBuiltin: InheritableAttr {
   let Spellings = [Clang<"clspv_libclc_builtin">];
   let Subjects = SubjectList<[Function]>;
   let Documentation = [ClspvLibclcBuiltinDoc];
+  let SimpleHandler = 1;
+}
+
+def NoTrivialAutoVarInit: InheritableAttr {
+  let Spellings = [Declspec<"no_init_all">];
+  let Subjects = SubjectList<[Function, Tag]>;
+  let Documentation = [NoTrivialAutoVarInitDocs];
   let SimpleHandler = 1;
 }
