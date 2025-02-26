@@ -367,14 +367,6 @@ static __inline__ unsigned __int64 __readpmc(unsigned long __A) {
   return __builtin_ia32_rdpmc(__A);
 }
 
-// BUG: Identify equivalent way to disable shrinkwrapping
-static __inline__ void __nvreg_restore_fence(void) {
-}
-
-static __inline__ void __nvreg_save_fence(void) {
-}
-
-
 #endif
 
 #if defined(__i386__) || defined(__x86_64__) || defined(__aarch64__)
