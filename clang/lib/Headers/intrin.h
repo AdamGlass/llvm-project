@@ -27,6 +27,7 @@
 #endif
 
 #if defined(__aarch64__) || defined(__arm64ec__)
+#include <arm64_neon.h>
 #include <arm64intr.h>
 #endif
 
@@ -389,6 +390,8 @@ static __inline__ void __DEFAULT_FN_ATTRS __nop(void) {
 unsigned __int64 __getReg(int);
 long _InterlockedAdd(long volatile *Addend, long Value);
 __int64 _InterlockedAdd64(__int64 volatile *Addend, __int64 Value);
+__int64 _InterlockedAdd64_nf(__int64 volatile *Addend, __int64 Value);
+unsigned char _interlockedbittestandreset64_nf( __int64 volatile *, __int64);
 __int64 _ReadStatusReg(int);
 void _WriteStatusReg(int, __int64);
 
@@ -436,6 +439,29 @@ unsigned int _CountOneBits64(unsigned __int64);
 unsigned int __hlt(unsigned int, ...);
 
 void __cdecl __prefetch(const void *);
+
+static __inline__ void  __DEFAULT_FN_ATTRS
+_disable(void)
+{
+    asm volatile ("msr DAIFSet, #2");
+}
+
+static __inline__ void __DEFAULT_FN_ATTRS
+_enable(void)
+{
+    asm volatile ("msr DAIFClr, #2");
+}
+
+static __inline__ unsigned __int64 __DEFAULT_FN_ATTRS
+__ldar64(unsigned __int64 volatile * _Target) {
+    return __c11_atomic_load((_Atomic unsigned __int64 *) _Target, 2);
+}
+
+static __inline__ void __DEFAULT_FN_ATTRS
+__stlr64(unsigned __int64 volatile * _Target, unsigned __int64 _Value)
+{
+   __c11_atomic_store((_Atomic unsigned __int64 *) _Target, _Value, 3);
+}
 
 #endif
 
