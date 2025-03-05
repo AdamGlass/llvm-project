@@ -231,8 +231,8 @@ void X86ExpandPseudo::expandCALL_RVMARKER(MachineBasicBlock &MBB,
                      .addReg(TargetReg, RegState::Define)
                      .addReg(X86::RAX)
                      .getInstr();
-  if (MI.shouldUpdateCallSiteInfo())
-    MBB.getParent()->moveCallSiteInfo(&MI, Marker);
+  if (MI.shouldUpdateAdditionalCallInfo())
+    MBB.getParent()->moveAdditionalCallInfo(&MI, Marker);
 
   // Emit call to ObjC runtime.
   const uint32_t *RegMask =
@@ -361,9 +361,9 @@ bool X86ExpandPseudo::expandMI(MachineBasicBlock &MBB,
     NewMI.copyImplicitOps(*MBBI->getParent()->getParent(), *MBBI);
     NewMI.setCFIType(*MBB.getParent(), MI.getCFIType());
 
-    // Update the call site info.
-    if (MBBI->isCandidateForCallSiteEntry())
-      MBB.getParent()->moveCallSiteInfo(&*MBBI, &NewMI);
+    // Update the call info.
+    if (MBBI->isCandidateForAdditionalCallInfo())
+      MBB.getParent()->moveAdditionalCallInfo(&*MBBI, &NewMI);
 
     // Delete the pseudo instruction TCRETURN.
     MBB.erase(MBBI);
