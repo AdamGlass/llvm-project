@@ -65,7 +65,8 @@ public:
 
   /// Returns true if a cast between SrcAS and DestAS is a noop.
   bool isNoopAddrSpaceCast(unsigned SrcAS, unsigned DestAS) const override {
-    return (getPointerSize(SrcAS) == getPointerSize(DestAS));
+    // Addrspacecasts are always noops.
+    return true;
   }
 
 private:
