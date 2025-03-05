@@ -27,6 +27,7 @@
 #endif
 
 #if defined(__aarch64__) || defined(__arm64ec__)
+#include <arm64_neon.h>
 #include <arm64intr.h>
 #endif
 
@@ -91,12 +92,14 @@ void __outdword(unsigned short, unsigned long);
 void __outdwordstring(unsigned short, unsigned long *, unsigned long);
 void __outword(unsigned short, unsigned short);
 void __outwordstring(unsigned short, unsigned short *, unsigned long);
-unsigned long __readcr0(void);
-unsigned long __readcr2(void);
+
+unsigned __LPTRINT_TYPE__ __readcr0(void);
+unsigned __LPTRINT_TYPE__ __readcr2(void);
 unsigned __LPTRINT_TYPE__ __readcr3(void);
-unsigned long __readcr4(void);
-unsigned long __readcr8(void);
-unsigned int __readdr(unsigned int);
+unsigned __LPTRINT_TYPE__ __readcr4(void);
+unsigned __LPTRINT_TYPE__ __readcr8(void);
+unsigned __LPTRINT_TYPE__ __readdr(unsigned int);
+
 #ifdef __i386__
 unsigned char __readfsbyte(unsigned long);
 unsigned short __readfsword(unsigned long);
@@ -122,11 +125,11 @@ unsigned __int64 __ull_rshift(unsigned __int64, int);
 void __vmx_off(void);
 void __vmx_vmptrst(unsigned __int64 *);
 void __wbinvd(void);
-void __writecr0(unsigned int);
+void __writecr0(unsigned __INTPTR_TYPE__);
 void __writecr3(unsigned __INTPTR_TYPE__);
-void __writecr4(unsigned int);
-void __writecr8(unsigned int);
-void __writedr(unsigned int, unsigned int);
+void __writecr4(unsigned __INTPTR_TYPE__);
+void __writecr8(unsigned __INTPTR_TYPE__);
+void __writedr(unsigned int, unsigned __INTPTR_TYPE__);
 void __writefsbyte(unsigned long, unsigned char);
 void __writefsdword(unsigned long, unsigned long);
 void __writefsqword(unsigned long, unsigned __int64);
@@ -359,6 +362,11 @@ static inline void __outword(unsigned short port, unsigned short data) {
 static inline void __outdword(unsigned short port, unsigned long data) {
   __asm__ __volatile__("outl %k0, %w1" : : "a"(data), "Nd"(port));
 }
+
+static __inline__ unsigned __int64 __readpmc(unsigned long __A) {
+  return __builtin_ia32_rdpmc(__A);
+}
+
 #endif
 
 #if defined(__i386__) || defined(__x86_64__) || defined(__aarch64__)
@@ -374,6 +382,8 @@ static __inline__ void __DEFAULT_FN_ATTRS __nop(void) {
 unsigned __int64 __getReg(int);
 long _InterlockedAdd(long volatile *Addend, long Value);
 __int64 _InterlockedAdd64(__int64 volatile *Addend, __int64 Value);
+__int64 _InterlockedAdd64_nf(__int64 volatile *Addend, __int64 Value);
+unsigned char _interlockedbittestandreset64_nf( __int64 volatile *, __int64);
 __int64 _ReadStatusReg(int);
 void _WriteStatusReg(int, __int64);
 
@@ -422,6 +432,29 @@ unsigned int __hlt(unsigned int, ...);
 
 void __cdecl __prefetch(const void *);
 
+static __inline__ void  __DEFAULT_FN_ATTRS
+_disable(void)
+{
+    asm volatile ("msr DAIFSet, #2");
+}
+
+static __inline__ void __DEFAULT_FN_ATTRS
+_enable(void)
+{
+    asm volatile ("msr DAIFClr, #2");
+}
+
+static __inline__ unsigned __int64 __DEFAULT_FN_ATTRS
+__ldar64(unsigned __int64 volatile * _Target) {
+    return __c11_atomic_load((_Atomic unsigned __int64 *) _Target, 2);
+}
+
+static __inline__ void __DEFAULT_FN_ATTRS
+__stlr64(unsigned __int64 volatile * _Target, unsigned __int64 _Value)
+{
+   __c11_atomic_store((_Atomic unsigned __int64 *) _Target, _Value, 3);
+}
+
 #endif
 
 /*----------------------------------------------------------------------------*\
@@ -442,6 +475,31 @@ __readmsr(unsigned long __register) {
   return (((unsigned __int64)__edx) << 32) | (unsigned __int64)__eax;
 }
 
+static __inline__ void __DEFAULT_FN_ATTRS
+__writemsr(unsigned long __register, unsigned __int64 __value) {
+    asm volatile("wrmsr" : : "d"((unsigned long)(__value >> 32)), "a"((unsigned long)__value), "c"(__register));
+}
+
+static __inline__ unsigned __LPTRINT_TYPE__ __DEFAULT_FN_ATTRS __readcr0(void) {
+  unsigned __LPTRINT_TYPE__ __cr0_val;
+  __asm__ __volatile__(
+                       "mov {%%cr0, %0|%0, cr0}"
+                       : "=r"(__cr0_val)
+                       :
+                       : "memory");
+  return __cr0_val;
+}
+
+static __inline__ unsigned __LPTRINT_TYPE__ __DEFAULT_FN_ATTRS __readcr2(void) {
+  unsigned __LPTRINT_TYPE__ __cr2_val;
+  __asm__ __volatile__(
+                       "mov {%%cr2, %0|%0, cr2}"
+                       : "=r"(__cr2_val)
+                       :
+                       : "memory");
+  return __cr2_val;
+}
+
 static __inline__ unsigned __LPTRINT_TYPE__ __DEFAULT_FN_ATTRS __readcr3(void) {
   unsigned __LPTRINT_TYPE__ __cr3_val;
   __asm__ __volatile__(
@@ -452,10 +510,79 @@ static __inline__ unsigned __LPTRINT_TYPE__ __DEFAULT_FN_ATTRS __readcr3(void) {
   return __cr3_val;
 }
 
+static __inline__ unsigned __LPTRINT_TYPE__ __DEFAULT_FN_ATTRS __readcr4(void) {
+  unsigned __LPTRINT_TYPE__ __cr4_val;
+  __asm__ __volatile__(
+                       "mov {%%cr4, %0|%0, cr4}"
+                       : "=r"(__cr4_val)
+                       :
+                       : "memory");
+  return __cr4_val;
+}
+
+static __inline__ unsigned __LPTRINT_TYPE__ __DEFAULT_FN_ATTRS __readcr8(void) {
+  unsigned __LPTRINT_TYPE__ __cr8_val;
+  __asm__ __volatile__(
+                       "mov {%%cr8, %0|%0, cr8}"
+                       : "=r"(__cr8_val)
+                       :
+                       : "memory");
+  return __cr8_val;
+}
+
+static __inline__ void __DEFAULT_FN_ATTRS
+__writecr0(unsigned __INTPTR_TYPE__ __cr0_val) {
+  __asm__ ("mov {%0, %%cr0|cr0, %0}" : : "r"(__cr0_val) : "memory");
+}
+
+static __inline__ void __DEFAULT_FN_ATTRS
+__writecr2(unsigned __INTPTR_TYPE__ __cr2_val) {
+  __asm__ ("mov {%0, %%cr2|cr2, %0}" : : "r"(__cr2_val) : "memory");
+}
+
 static __inline__ void __DEFAULT_FN_ATTRS
 __writecr3(unsigned __INTPTR_TYPE__ __cr3_val) {
   __asm__ ("mov {%0, %%cr3|cr3, %0}" : : "r"(__cr3_val) : "memory");
 }
+
+static __inline__ void __DEFAULT_FN_ATTRS
+__writecr4(unsigned __INTPTR_TYPE__ __cr4_val) {
+  __asm__ ("mov {%0, %%cr4|cr4, %0}" : : "r"(__cr4_val) : "memory");
+}
+
+static __inline__ void __DEFAULT_FN_ATTRS
+__writecr8(unsigned __INTPTR_TYPE__ __cr8_val) {
+  __asm__ ("mov {%0, %%cr8|cr8, %0}" : : "r"(__cr8_val) : "memory");
+}
+
+static __inline__ void __lidt(void *source) {
+    __asm__ __volatile__("lidtq %0" : : "m"(source) : "memory");
+}
+
+static __inline__ void __sidt(void *source) {
+    __asm__ __volatile__("sidtq %0" : "=m"(source) : : "memory");
+}
+
+static __inline__ void  _enable(void) {
+  __asm__ volatile("sti");
+}
+
+static __inline__ void  _disable(void) {
+  __asm__ volatile("cli");
+}
+
+static __inline__ void _clac(void) {
+    __asm__ __volatile__("clac" : : : "cc");
+}
+
+static __inline__ void _stac(void) {
+    __asm__ __volatile__("stac" : : : "cc");
+}
+
+static __inline__ void __invlpg(void *va) {
+    asm volatile("invlpg (%0)" : : "r"(va) : "memory");
+}
+
 #endif
 
 #ifdef __cplusplus
