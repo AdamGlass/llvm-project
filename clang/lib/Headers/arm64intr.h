@@ -41,6 +41,10 @@ typedef enum
   _ARM64_BARRIER_OSHLD = 0x1
 } _ARM64INTR_BARRIER_TYPE;
 
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
 void __dmb(unsigned int _Type);
 void __dsb(unsigned int _Type);
 void __isb(unsigned int _Type);
@@ -98,6 +102,10 @@ unsigned __int8 __casal8(unsigned __int8 volatile * _Target, unsigned __int8 _Co
 unsigned __int16 __casal16(unsigned __int16 volatile * _Target, unsigned __int16 _Comp, unsigned __int16 _Value);
 unsigned __int32 __casal32(unsigned __int32 volatile * _Target, unsigned __int32 _Comp, unsigned __int32 _Value);
 unsigned __int64 __casal64(unsigned __int64 volatile * _Target, unsigned __int64 _Comp, unsigned __int64 _Value);
+
+#ifdef __cplusplus
+}
+#endif
 
 #include <arm_acle.h>
 
