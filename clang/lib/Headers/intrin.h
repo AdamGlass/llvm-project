@@ -381,6 +381,7 @@ static __inline__ void __DEFAULT_FN_ATTRS __nop(void) {
 #if defined(__aarch64__) || defined(__arm64ec__)
 unsigned __int64 __getReg(int);
 long _InterlockedAdd(long volatile *Addend, long Value);
+long _InterlockedAdd_nf(long volatile *Addend, long Value);
 __int64 _InterlockedAdd64(__int64 volatile *Addend, __int64 Value);
 __int64 _InterlockedAdd64_nf(__int64 volatile *Addend, __int64 Value);
 unsigned char _interlockedbittestandreset64_nf( __int64 volatile *, __int64);
