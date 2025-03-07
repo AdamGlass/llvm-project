@@ -428,12 +428,12 @@ static void computeUsesMSVCFloatingPoint(const Triple &TT, const Function &F,
     return;
 
   for (const Instruction &I : instructions(F)) {
-    if (I.getType()->isFloatingPointTy()) {
+    if (I.getType()->isFPOrFPVectorTy()) {
       MMI.setUsesMSVCFloatingPoint(true);
       return;
     }
     for (const auto &Op : I.operands()) {
-      if (Op->getType()->isFloatingPointTy()) {
+      if (Op->getType()->isFPOrFPVectorTy()) {
         MMI.setUsesMSVCFloatingPoint(true);
         return;
       }
