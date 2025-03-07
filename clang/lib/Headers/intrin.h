@@ -444,6 +444,11 @@ _enable(void)
     asm volatile ("msr DAIFClr, #2");
 }
 
+static __inline__ unsigned __int32 __DEFAULT_FN_ATTRS
+__ldar32(unsigned __int32 volatile * _Target) {
+    return (unsigned __int32) __c11_atomic_load((_Atomic unsigned __int32 *) _Target, 2);
+}
+
 static __inline__ unsigned __int64 __DEFAULT_FN_ATTRS
 __ldar64(unsigned __int64 volatile * _Target) {
     return __c11_atomic_load((_Atomic unsigned __int64 *) _Target, 2);
