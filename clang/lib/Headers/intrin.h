@@ -351,6 +351,24 @@ static inline unsigned long __indword(unsigned short port) {
   return ret;
 }
 
+static inline void __inbytestring(unsigned short port, unsigned char* buffer, unsigned long count)
+{
+    asm volatile("rep insb" : "+D"(buffer), "+c"(count) : "d"(port) : "memory");
+}
+
+static inline void __inwordstring(unsigned short port, unsigned short* buffer, unsigned long count)
+{
+    asm volatile("rep insw" : "+D"(buffer), "+c"(count) : "d"(port) : "memory");
+}
+
+static inline void __indwordstring(unsigned short port, unsigned long* buffer, unsigned long count)
+{
+    unsigned long* word_buffer = (unsigned long*)buffer;
+    unsigned long word_count = count * 2;  // Each double word is 2 words
+
+    asm volatile("rep insw" : "+D"(word_buffer), "+c"(word_count) : "d"(port) : "memory");
+}
+
 static inline void __outbyte(unsigned short port, unsigned char data) {
   __asm__ __volatile__("outb %b0, %w1" : : "a"(data), "Nd"(port));
 }
@@ -361,6 +379,24 @@ static inline void __outword(unsigned short port, unsigned short data) {
 
 static inline void __outdword(unsigned short port, unsigned long data) {
   __asm__ __volatile__("outl %k0, %w1" : : "a"(data), "Nd"(port));
+}
+
+static inline void __outbytestring(unsigned short port, unsigned char* buffer, unsigned long count)
+{
+    asm volatile("rep outsb" : "+S"(buffer), "+c"(count) : "d"(port) : "memory");
+}
+
+static inline void __outwordstring(unsigned short port, unsigned short* buffer, unsigned long count)
+{
+    asm volatile("rep outsw" : "+S"(buffer), "+c"(count) : "d"(port) : "memory");
+}
+
+static inline void __outdwordstring(unsigned short port, unsigned long* buffer, unsigned long count)
+{
+    unsigned long* word_buffer = (unsigned long*)buffer;
+    unsigned long word_count = count * 2;  // Each double word is 2 words
+
+    asm volatile("rep outsw" : "+S"(word_buffer), "+c"(word_count) : "d"(port) : "memory");
 }
 
 static __inline__ unsigned __int64 __readpmc(unsigned long __A) {
