@@ -253,8 +253,14 @@ let isPseudo = 1, isMeta = 1, SchedRW = [WriteSystem] in {
                             "#SEH_PushFrame $mode", []>;
   def SEH_EndPrologue : I<0, Pseudo, (outs), (ins),
                             "#SEH_EndPrologue", []>;
-  def SEH_Epilogue : I<0, Pseudo, (outs), (ins),
-                            "#SEH_Epilogue", []>;
+}
+
+// Epilog instructions:
+let isPseudo = 1, isMeta = 1, SchedRW = [WriteSystem] in {
+  def SEH_BeginEpilogue : I<0, Pseudo, (outs), (ins),
+                            "#SEH_BeginEpilogue", []>;
+  def SEH_EndEpilogue : I<0, Pseudo, (outs), (ins),
+                            "#SEH_EndEpilogue", []>;
 }
 
 //===----------------------------------------------------------------------===//
