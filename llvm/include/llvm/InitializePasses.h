@@ -100,7 +100,7 @@ void initializeEarlyIfPredicatorPass(PassRegistry &);
 void initializeEarlyMachineLICMPass(PassRegistry&);
 void initializeEarlyTailDuplicatePass(PassRegistry&);
 void initializeEdgeBundlesPass(PassRegistry&);
-void initializeEHContGuardCatchretPass(PassRegistry &);
+void initializeEHContGuardTargetsPass(PassRegistry&);
 void initializeExpandLargeFpConvertLegacyPassPass(PassRegistry&);
 void initializeExpandLargeDivRemLegacyPassPass(PassRegistry&);
 void initializeExpandMemCmpLegacyPassPass(PassRegistry &);
