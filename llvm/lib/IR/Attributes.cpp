@@ -2434,6 +2434,15 @@ static bool checkStrictFP(const Function &Caller, const Function &Callee) {
 }
 
 static bool checkSections(const Function &Caller, const Function &Callee) {
+
+  const Module *M = Caller.getParent();
+  const std::string &T = M->getTargetTriple();
+  const Triple TT = Triple(T);
+
+  if (!TT.isWindowsMSVCEnvironment()) {
+    return true;
+  }
+
   // Implement MSVC compatible cross-section inlining rules
   StringRef CallerSection = Caller.getSection();
   StringRef CalleeSection = Callee.getSection();
