@@ -543,9 +543,9 @@ namespace llvm {
   /// \see CFGuardLongjmp.cpp
   FunctionPass *createCFGuardLongjmpPass();
 
-  /// Creates EHContGuard catchret target identification pass.
-  /// \see EHContGuardCatchret.cpp
-  FunctionPass *createEHContGuardCatchretPass();
+  /// Creates Windows EH Continuation Guard target identification pass.
+  /// \see EHContGuardTargets.cpp
+  FunctionPass *createEHContGuardTargetsPass();
 
   /// Create Hardware Loop pass. \see HardwareLoops.cpp
   FunctionPass *createHardwareLoopsLegacyPass();
@@ -605,6 +605,9 @@ namespace llvm {
 
   /// Lowers KCFI operand bundles for indirect calls.
   FunctionPass *createKCFIPass();
+
+  /// Creates Windows Hot Patch pass. \see WindowsHotPatch.cpp
+  ModulePass *createWindowsHotPatch();
 } // End llvm namespace
 
 #endif

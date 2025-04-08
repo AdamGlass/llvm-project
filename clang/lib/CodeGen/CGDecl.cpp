@@ -464,6 +464,13 @@ void CodeGenFunction::EmitStaticVarDecl(const VarDecl &D,
   if (auto *SA = D.getAttr<PragmaClangRelroSectionAttr>())
     var->addAttribute("relro-section", SA->getName());
 
+  if (auto *SA = D.getAttr<PragmaMSBSSSectionAttr>())
+    var->addAttribute("bss-section", SA->getName());
+  if (auto *SA = D.getAttr<PragmaMSDataSectionAttr>())
+    var->addAttribute("data-section", SA->getName());
+  if (auto *SA = D.getAttr<PragmaMSConstSectionAttr>())
+    var->addAttribute("rodata-section", SA->getName());
+
   if (const SectionAttr *SA = D.getAttr<SectionAttr>())
     var->setSection(SA->getName());
 
@@ -1926,13 +1933,16 @@ void CodeGenFunction::EmitAutoVarInit(const AutoVarEmission &emission) {
   const Address Loc =
       locIsByrefHeader ? emission.getObjectAddress(*this) : emission.Addr;
 
+  auto hasNoTrivialAutoVarInitAttr = [&](const Decl *D) {
+    return D && D->hasAttr<NoTrivialAutoVarInitAttr>();
+  };
   // Note: constexpr already initializes everything correctly.
   LangOptions::TrivialAutoVarInitKind trivialAutoVarInit =
-      (D.isConstexpr()
+      ((D.isConstexpr() || D.getAttr<UninitializedAttr>() ||
+        hasNoTrivialAutoVarInitAttr(type->getAsTagDecl()) ||
+        hasNoTrivialAutoVarInitAttr(CurFuncDecl))
            ? LangOptions::TrivialAutoVarInitKind::Uninitialized
-           : (D.getAttr<UninitializedAttr>()
-                  ? LangOptions::TrivialAutoVarInitKind::Uninitialized
-                  : getContext().getLangOpts().getTrivialAutoVarInit()));
+           : getContext().getLangOpts().getTrivialAutoVarInit());
 
   auto initializeWhatIsTechnicallyUninitialized = [&](Address Loc) {
     if (trivialAutoVarInit ==
@@ -1976,8 +1986,8 @@ void CodeGenFunction::EmitAutoVarInit(const AutoVarEmission &emission) {
       // Constants for long _BitInt types are split into individual bytes.
       // Try to fold these back into an integer constant so it can be stored
       // properly.
-      llvm::Type *LoadType = CGM.getTypes().convertTypeForLoadStore(
-          D.getType(), constant->getType());
+      llvm::Type *LoadType =
+          CGM.getTypes().convertTypeForLoadStore(type, constant->getType());
       constant = llvm::ConstantFoldLoadFromConst(
           constant, LoadType, llvm::APInt::getZero(32), CGM.getDataLayout());
     }
@@ -1994,8 +2004,7 @@ void CodeGenFunction::EmitAutoVarInit(const AutoVarEmission &emission) {
       // It may be that the Init expression uses other uninitialized memory,
       // but auto-var-init here would not help, as auto-init would get
       // overwritten by Init.
-      if (!D.getType()->isScalarType() || capturedByInit ||
-          isAccessedBy(D, Init)) {
+      if (!type->isScalarType() || capturedByInit || isAccessedBy(D, Init)) {
         initializeWhatIsTechnicallyUninitialized(Loc);
       }
     }

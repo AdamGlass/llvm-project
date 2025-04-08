@@ -877,8 +877,8 @@ bool AArch64ExpandPseudo::expandCALL_RVMARKER(
                      .add(RVTarget)
                      .getInstr();
 
-  if (MI.shouldUpdateCallSiteInfo())
-    MBB.getParent()->moveCallSiteInfo(&MI, OriginalCall);
+  if (MI.shouldUpdateAdditionalCallInfo())
+    MBB.getParent()->moveAdditionalCallInfo(&MI, OriginalCall);
 
   MI.eraseFromParent();
   finalizeBundle(MBB, OriginalCall->getIterator(),
@@ -906,8 +906,8 @@ bool AArch64ExpandPseudo::expandCALL_BTI(MachineBasicBlock &MBB,
           .addImm(36)
           .getInstr();
 
-  if (MI.shouldUpdateCallSiteInfo())
-    MBB.getParent()->moveCallSiteInfo(&MI, Call);
+  if (MI.shouldUpdateAdditionalCallInfo())
+    MBB.getParent()->moveAdditionalCallInfo(&MI, Call);
 
   MI.eraseFromParent();
   finalizeBundle(MBB, Call->getIterator(), std::next(BTI->getIterator()));

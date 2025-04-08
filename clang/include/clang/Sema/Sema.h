@@ -1718,10 +1718,10 @@ public:
   };
   SmallVector<AlignPackIncludeState, 8> AlignPackIncludeStack;
   // Segment #pragmas.
-  PragmaStack<StringLiteral *> DataSegStack;
-  PragmaStack<StringLiteral *> BSSSegStack;
-  PragmaStack<StringLiteral *> ConstSegStack;
-  PragmaStack<StringLiteral *> CodeSegStack;
+  PragmaStack<std::string> DataSegStack;
+  PragmaStack<std::string> BSSSegStack;
+  PragmaStack<std::string> ConstSegStack;
+  PragmaStack<std::string> CodeSegStack;
 
   // #pragma strict_gs_check.
   PragmaStack<bool> StrictGuardStackCheckStack;
@@ -1759,7 +1759,7 @@ public:
   };
 
   /// Last section used with #pragma init_seg.
-  StringLiteral *CurInitSeg;
+  std::string CurInitSeg;
   SourceLocation CurInitSegLoc;
 
   /// Sections used with #pragma alloc_text.
@@ -1914,6 +1914,7 @@ public:
                     NamedDecl *TheDecl);
   bool UnifySection(StringRef SectionName, int SectionFlags,
                     SourceLocation PragmaSectionLocation);
+  void AttachSectionFlags(VarDecl *VarDecl, StringRef SectionName);
 
   /// Called on well formed \#pragma bss_seg/data_seg/const_seg/code_seg.
   void ActOnPragmaMSSeg(SourceLocation PragmaLocation,

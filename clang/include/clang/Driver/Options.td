@@ -7403,6 +7403,18 @@ def fexperimental_assignment_tracking_EQ : Joined<["-"], "fexperimental-assignme
 def enable_tlsdesc : Flag<["-"], "enable-tlsdesc">,
   MarshallingInfoFlag<CodeGenOpts<"EnableTLSDESC">>;
 
+def import_call_optimization : Flag<["-"], "import-call-optimization">,
+    HelpText<"Emit Import Call sections on supported targets that can be used "
+             "by the Windows kernel to enable import call optimization">,
+    MarshallingInfoFlag<CodeGenOpts<"ImportCallOptimization">>;
+
+def replaceable_function: Joined<["-"], "loader-replaceable-function=">,
+  MarshallingInfoStringVector<CodeGenOpts<"LoaderReplaceableFunctionNames">>;
+
+def epilog_unwind : Flag<["-"], "winx64-eh-unwindv2">,
+  HelpText<"Enable unwind v2 (epilog) information for x64 Windows">,
+  MarshallingInfoFlag<CodeGenOpts<"WinX64EHUnwindV2">>;
+
 } // let Visibility = [CC1Option]
 
 //===----------------------------------------------------------------------===//
@@ -8529,6 +8541,8 @@ def _SLASH_M_Group : OptionGroup<"</M group>">, Group<cl_compile_Group>;
 def _SLASH_volatile_Group : OptionGroup<"</volatile group>">,
   Group<cl_compile_Group>;
 
+def _SLASH_d2epilogunwind : CLFlag<"d2epilogunwind">,
+  HelpText<"Enable unwind v2 (epilog) information for x64 Windows">;
 def _SLASH_EH : CLJoined<"EH">, HelpText<"Set exception handling model">;
 def _SLASH_EP : CLFlag<"EP">,
   HelpText<"Disable linemarker output and preprocess to stdout">;
@@ -8662,6 +8676,10 @@ def _SLASH_Gregcall : CLFlag<"Gregcall">,
   HelpText<"Set __regcall as a default calling convention">;
 def _SLASH_Gregcall4 : CLFlag<"Gregcall4">,
   HelpText<"Set __regcall4 as a default calling convention to respect __regcall ABI v.4">;
+
+def _SLASH_funcoverride : CLCompileJoined<"funcoverride:">,
+  HelpText<"Mark <function> as being replaceable by the Windows kernel loader">,
+  MetaVarName<"<function>">;
 
 // GNU Driver aliases
 

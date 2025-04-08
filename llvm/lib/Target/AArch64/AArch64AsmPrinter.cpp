@@ -24,6 +24,7 @@
 #include "MCTargetDesc/AArch64TargetStreamer.h"
 #include "TargetInfo/AArch64TargetInfo.h"
 #include "Utils/AArch64BaseInfo.h"
+#include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
@@ -86,6 +87,9 @@ class AArch64AsmPrinter : public AsmPrinter {
   FaultMaps FM;
   const AArch64Subtarget *STI;
   bool ShouldEmitWeakSwiftAsyncExtendedFramePointerFlags = false;
+  bool EnableImportCallOptimization = false;
+  DenseMap<MCSection *, std::vector<std::pair<MCSymbol *, MCSymbol *>>>
+      SectionToImportedFunctionCalls;
 
 public:
   AArch64AsmPrinter(TargetMachine &TM, std::unique_ptr<MCStreamer> Streamer)
@@ -247,6 +251,11 @@ private:
                               MCSymbol *LazyPointer) override;
   void emitMachOIFuncStubHelperBody(Module &M, const GlobalIFunc &GI,
                                     MCSymbol *LazyPointer) override;
+
+  /// Checks if this instruction is part of a sequence that is eligle for import
+  /// call optimization and, if so, records it to be emitted in the import call
+  /// section.
+  void recordIfImportCall(const MachineInstr *BranchInst);
 };
 
 } // end anonymous namespace
@@ -255,32 +264,11 @@ void AArch64AsmPrinter::emitStartOfAsmFile(Module &M) {
   const Triple &TT = TM.getTargetTriple();
 
   if (TT.isOSBinFormatCOFF()) {
-    // Emit an absolute @feat.00 symbol
-    MCSymbol *S = MMI->getContext().getOrCreateSymbol(StringRef("@feat.00"));
-    OutStreamer->beginCOFFSymbolDef(S);
-    OutStreamer->emitCOFFSymbolStorageClass(COFF::IMAGE_SYM_CLASS_STATIC);
-    OutStreamer->emitCOFFSymbolType(COFF::IMAGE_SYM_DTYPE_NULL);
-    OutStreamer->endCOFFSymbolDef();
-    int64_t Feat00Value = 0;
+    emitCOFFFeatureSymbol(M);
+    emitCOFFReplaceableFunctionData(M);
 
-    if (M.getModuleFlag("cfguard")) {
-      // Object is CFG-aware.
-      Feat00Value |= COFF::Feat00Flags::GuardCF;
-    }
-
-    if (M.getModuleFlag("ehcontguard")) {
-      // Object also has EHCont.
-      Feat00Value |= COFF::Feat00Flags::GuardEHCont;
-    }
-
-    if (M.getModuleFlag("ms-kernel")) {
-      // Object is compiled with /kernel.
-      Feat00Value |= COFF::Feat00Flags::Kernel;
-    }
-
-    OutStreamer->emitSymbolAttribute(S, MCSA_Global);
-    OutStreamer->emitAssignment(
-        S, MCConstantExpr::create(Feat00Value, MMI->getContext()));
+    if (M.getModuleFlag("import-call-optimization"))
+      EnableImportCallOptimization = true;
   }
 
   if (!TT.isOSBinFormatELF())
@@ -927,6 +915,38 @@ void AArch64AsmPrinter::emitEndOfAsmFile(Module &M) {
   // Emit stack and fault map information.
   FM.serializeToFaultMapSection();
 
+  // If import call optimization is enabled, emit the appropriate section.
+  // We do this whether or not we recorded any import calls.
+  if (EnableImportCallOptimization && TT.isOSBinFormatCOFF()) {
+    OutStreamer->switchSection(getObjFileLowering().getImportCallSection());
+
+    // Section always starts with some magic.
+    constexpr char ImpCallMagic[12] = "Imp_Call_V1";
+    OutStreamer->emitBytes(StringRef{ImpCallMagic, sizeof(ImpCallMagic)});
+
+    // Layout of this section is:
+    // Per section that contains calls to imported functions:
+    //  uint32_t SectionSize: Size in bytes for information in this section.
+    //  uint32_t Section Number
+    //  Per call to imported function in section:
+    //    uint32_t Kind: the kind of imported function.
+    //    uint32_t BranchOffset: the offset of the branch instruction in its
+    //                            parent section.
+    //    uint32_t TargetSymbolId: the symbol id of the called function.
+    for (auto &[Section, CallsToImportedFuncs] :
+         SectionToImportedFunctionCalls) {
+      unsigned SectionSize =
+          sizeof(uint32_t) * (2 + 3 * CallsToImportedFuncs.size());
+      OutStreamer->emitInt32(SectionSize);
+      OutStreamer->emitCOFFSecNumber(Section->getBeginSymbol());
+      for (auto &[CallsiteSymbol, CalledSymbol] : CallsToImportedFuncs) {
+        // Kind is always IMAGE_REL_ARM64_DYNAMIC_IMPORT_CALL (0x13).
+        OutStreamer->emitInt32(0x13);
+        OutStreamer->emitCOFFSecOffset(CallsiteSymbol);
+        OutStreamer->emitCOFFSymbolIndex(CalledSymbol);
+      }
+    }
+  }
 }
 
 void AArch64AsmPrinter::emitLOHs() {
@@ -2527,6 +2547,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
   case AArch64::TCRETURNrix17:
   case AArch64::TCRETURNrinotx16:
   case AArch64::TCRETURNriALL: {
+    recordIfImportCall(MI);
     MCInst TmpInst;
     TmpInst.setOpcode(AArch64::BR);
     TmpInst.addOperand(MCOperand::createReg(MI->getOperand(0).getReg()));
@@ -2536,6 +2557,7 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
   case AArch64::TCRETURNdi: {
     MCOperand Dest;
     MCInstLowering.lowerOperand(MI->getOperand(0), Dest);
+    recordIfImportCall(MI);
     MCInst TmpInst;
     TmpInst.setOpcode(AArch64::B);
     TmpInst.addOperand(Dest);
@@ -2815,12 +2837,36 @@ void AArch64AsmPrinter::emitInstruction(const MachineInstr *MI) {
     TS->emitARM64WinCFISaveAnyRegQPX(MI->getOperand(0).getImm(),
                                      -MI->getOperand(2).getImm());
     return;
+
+  case AArch64::BLR:
+  case AArch64::BR:
+    recordIfImportCall(MI);
+    MCInst TmpInst;
+    MCInstLowering.Lower(MI, TmpInst);
+    EmitToStreamer(*OutStreamer, TmpInst);
+    return;
   }
 
   // Finally, do the automated lowerings for everything else.
   MCInst TmpInst;
   MCInstLowering.Lower(MI, TmpInst);
   EmitToStreamer(*OutStreamer, TmpInst);
+}
+
+void AArch64AsmPrinter::recordIfImportCall(
+    const llvm::MachineInstr *BranchInst) {
+  if (!EnableImportCallOptimization)
+    return;
+
+  auto [GV, OpFlags] = BranchInst->getMF()->tryGetCalledGlobal(BranchInst);
+  if (GV && GV->hasDLLImportStorageClass()) {
+    auto *CallSiteSymbol = MMI->getContext().createNamedTempSymbol("impcall");
+    OutStreamer->emitLabel(CallSiteSymbol);
+
+    auto *CalledSymbol = MCInstLowering.GetGlobalValueSymbol(GV, OpFlags);
+    SectionToImportedFunctionCalls[OutStreamer->getCurrentSectionOnly()]
+        .push_back({CallSiteSymbol, CalledSymbol});
+  }
 }
 
 void AArch64AsmPrinter::emitMachOIFuncStubBody(Module &M, const GlobalIFunc &GI,
@@ -3020,6 +3066,15 @@ void AArch64AsmPrinter::emitMachOIFuncStubHelperBody(Module &M,
 
 const MCExpr *AArch64AsmPrinter::lowerConstant(const Constant *CV) {
   if (const GlobalValue *GV = dyn_cast<GlobalValue>(CV)) {
+
+    // Check for dynamic fixup in the constant pool and propagate to the symbol
+    // reference
+    if (const auto *GVar = dyn_cast<llvm::GlobalVariable>(GV)) {
+        if (GVar->hasAttribute("msvc_dynfixup"))
+          return MCSymbolRefExpr::create(MCInstLowering.GetGlobalValueSymbol(GV, 0),
+                                         MCSymbolRefExpr::VK_COFF_DYNFIXUP,
+                                         OutContext);
+    }
     return MCSymbolRefExpr::create(MCInstLowering.GetGlobalValueSymbol(GV, 0),
                                    OutContext);
   }

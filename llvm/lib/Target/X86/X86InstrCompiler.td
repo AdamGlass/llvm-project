@@ -236,7 +236,7 @@ let isBranch = 1, isTerminator = 1, isCodeGenOnly = 1 in {
 //===----------------------------------------------------------------------===//
 // Pseudo instructions used by unwind info.
 //
-let isPseudo = 1, SchedRW = [WriteSystem] in {
+let isPseudo = 1, isMeta = 1, SchedRW = [WriteSystem] in {
   def SEH_PushReg : I<0, Pseudo, (outs), (ins i32imm:$reg),
                             "#SEH_PushReg $reg", []>;
   def SEH_SaveReg : I<0, Pseudo, (outs), (ins i32imm:$reg, i32imm:$dst),
@@ -253,8 +253,18 @@ let isPseudo = 1, SchedRW = [WriteSystem] in {
                             "#SEH_PushFrame $mode", []>;
   def SEH_EndPrologue : I<0, Pseudo, (outs), (ins),
                             "#SEH_EndPrologue", []>;
-  def SEH_Epilogue : I<0, Pseudo, (outs), (ins),
-                            "#SEH_Epilogue", []>;
+  def SEH_UnwindVersion : I<0, Pseudo, (outs), (ins i1imm:$version),
+                            "#SEH_UnwindVersion $version", []>;
+}
+
+// Epilog instructions:
+let isPseudo = 1, isMeta = 1, SchedRW = [WriteSystem] in {
+  def SEH_BeginEpilogue : I<0, Pseudo, (outs), (ins),
+                            "#SEH_BeginEpilogue", []>;
+  def SEH_EndEpilogue : I<0, Pseudo, (outs), (ins),
+                            "#SEH_EndEpilogue", []>;
+  def SEH_UnwindV2Start : I<0, Pseudo, (outs), (ins),
+                            "#SEH_UnwindV2Start", []>;
 }
 
 //===----------------------------------------------------------------------===//
@@ -1298,6 +1308,8 @@ def : Pat<(X86call_rvmarker (i64 tglobaladdr:$rvfunc), (i64 texternalsym:$dst)),
 def : Pat<(X86call_rvmarker (i64 tglobaladdr:$rvfunc), (i64 tglobaladdr:$dst)),
           (CALL64pcrel32_RVMARKER tglobaladdr:$rvfunc, tglobaladdr:$dst)>;
 
+def : Pat<(X86imp_call (i64 tglobaladdr:$dst)),
+          (CALL64pcrel32 tglobaladdr:$dst)>;
 
 // Tailcall stuff. The TCRETURN instructions execute after the epilog, so they
 // can never use callee-saved registers. That is the purpose of the GR64_TC
@@ -1329,7 +1341,11 @@ def : Pat<(X86tcret (i32 texternalsym:$dst), timm:$off),
 
 def : Pat<(X86tcret ptr_rc_tailcall:$dst, timm:$off),
           (TCRETURNri64 ptr_rc_tailcall:$dst, timm:$off)>,
-          Requires<[In64BitMode, NotUseIndirectThunkCalls]>;
+          Requires<[In64BitMode, NotUseIndirectThunkCalls, ImportCallOptimizationDisabled]>;
+
+def : Pat<(X86tcret ptr_rc_tailcall:$dst, timm:$off),
+          (TCRETURNri64_ImpCall ptr_rc_tailcall:$dst, timm:$off)>,
+          Requires<[In64BitMode, NotUseIndirectThunkCalls, ImportCallOptimizationEnabled]>;
 
 // Don't fold loads into X86tcret requiring more than 6 regs.
 // There wouldn't be enough scratch registers for base+index.

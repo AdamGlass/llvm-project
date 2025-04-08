@@ -35,6 +35,7 @@
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/IntrinsicInst.h"
 #include "llvm/IR/IntrinsicsX86.h"
+#include "llvm/IR/Module.h"
 #include "llvm/IR/Operator.h"
 #include "llvm/MC/MCAsmInfo.h"
 #include "llvm/MC/MCSymbol.h"
@@ -3280,6 +3281,11 @@ bool X86FastISel::fastLowerCall(CallLoweringInfo &CLI) {
   for (auto Flag : CLI.OutFlags)
     if (Flag.isSwiftError() || Flag.isPreallocated())
       return false;
+
+  // Can't handle import call optimization.
+  if (Is64Bit &&
+      MF->getFunction().getParent()->getModuleFlag("import-call-optimization"))
+    return false;
 
   SmallVector<MVT, 16> OutVTs;
   SmallVector<unsigned, 16> ArgRegs;

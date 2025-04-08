@@ -8379,6 +8379,9 @@ void Clang::AddClangCLArgs(const ArgList &Args, types::ID InputType,
   if (Args.hasArg(options::OPT__SLASH_kernel))
     CmdArgs.push_back("-fms-kernel");
 
+  if (Args.hasArg(options::OPT__SLASH_d2epilogunwind))
+    CmdArgs.push_back("-winx64-eh-unwindv2");
+
   for (const Arg *A : Args.filtered(options::OPT__SLASH_guard)) {
     StringRef GuardArgs = A->getValue();
     // The only valid options are "cf", "cf,nochecks", "cf-", "ehcont" and
@@ -8399,6 +8402,12 @@ void Clang::AddClangCLArgs(const ArgList &Args, types::ID InputType,
       D.Diag(diag::err_drv_invalid_value) << A->getSpelling() << GuardArgs;
     }
     A->claim();
+  }
+
+  for (const auto &FuncOverride :
+       Args.getAllArgValues(options::OPT__SLASH_funcoverride)) {
+    CmdArgs.push_back(Args.MakeArgString(
+        Twine("-loader-replaceable-function=") + FuncOverride));
   }
 }
 
