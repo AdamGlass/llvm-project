@@ -832,6 +832,11 @@ _InterlockedCompareExchange64_HLERelease(__int64 volatile *_Destination,
                        : "r" (_Exchange) : "memory");
   return _Comparand;
 }
+
+static __inline void __iso_volatile_ia_nt_store128(volatile __m128i* __A, __m128i __V) {
+    __builtin_nontemporal_store(__V, __A);
+}
+
 #endif
 #ifdef __cplusplus
 }
