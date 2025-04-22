@@ -657,7 +657,7 @@ __stlr64(unsigned __int64 volatile * _Target, unsigned __int64 _Value)
 static __inline__ void * __DEFAULT_FN_ATTRS
 __xpaci (void *_Pointer)
 {
-    register void *__lr asm ("lr") = _Pointer;
+    register void *__lr __asm__ ("lr") = _Pointer;
 
     __asm__ __volatile__ ("xpaclri" : "+r"(__lr));
     return __lr;
