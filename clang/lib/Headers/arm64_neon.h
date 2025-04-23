@@ -21,21 +21,61 @@
 extern "C" {
 #endif
 
-uint8x16_t __iso_volatile_neon_load128(const volatile uint8x16_t *);
-uint8x16x2_t __iso_volatile_neon_load128_p(const volatile uint8x16x2_t *);
-uint8x8x2_t __iso_volatile_neon_load64_np(const volatile uint8x8x2_t *);
-uint8x16x2_t __iso_volatile_neon_load128_np(const volatile uint8x16x2_t *);
-void __iso_volatile_neon_store128(const volatile uint8x16_t *, uint8x16_t);
-void __iso_volatile_neon_store128_p(const volatile uint8x16x2_t *, uint8x16x2_t);
-void __iso_volatile_neon_store64_np(const volatile uint8x8x2_t *, uint8x8x2_t);
-
-#if 0
-static inline void __iso_volatile_neon_store64_np(const volatile uint8x8x2_t *__A, uint8x8x2_t __V) {
-    __builtin_nontemporal_store(__V, __A);
+static inline uint8x16_t __iso_volatile_neon_load128(const volatile uint8x16_t *ptr)
+{
+  return *ptr;
 }
-#endif
 
-void __iso_volatile_neon_store128_np(const volatile uint8x16x2_t *, uint8x16x2_t);
+static inline uint8x16x2_t __iso_volatile_neon_load128_p(const volatile uint8x16x2_t *ptr)
+{
+  uint8x16x2_t result;
+  __asm__ __volatile__(
+    "ldp %q0, %q1, %2"
+    : "=w" (result.val[0]), "=w" (result.val[1])
+    : "m" (*ptr)
+  );
+  return result;
+}
+
+uint8x8x2_t __iso_volatile_neon_load64_np(const volatile uint8x8x2_t *);
+static inline uint8x16x2_t __iso_volatile_neon_load128_np(const volatile uint8x16x2_t *ptr) {
+  uint8x16x2_t result;
+  __asm__ __volatile__(
+    "ldnp %q0, %q1, %2"
+    : "=w" (result.val[0]), "=w" (result.val[1])
+    : "m" (*ptr)
+  );
+  return result;
+}
+
+static inline void __iso_volatile_neon_store128(volatile uint8x16_t *p, uint8x16_t val)
+{
+    *p = val;
+}
+
+static inline void __iso_volatile_neon_store128_p(volatile uint8x16x2_t *ptr, uint8x16x2_t data) {
+  __asm__ __volatile__(
+    "stp %q[i1], %q[i2], %[out]"
+    : [out] "=m" (*ptr)
+    : [i1]"w" (data.val[0]), [i2]"w" (data.val[1])
+  );
+}
+
+static inline void __iso_volatile_neon_store64_np(volatile uint8x8x2_t *ptr, uint8x8x2_t data) {
+  __asm__ __volatile__(
+    "stnp %d[i1], %d[i2], %[out]"
+    : [out] "=m" (*ptr)
+    : [i1]"w" (data.val[0]), [i2]"w" (data.val[1])
+  );
+}
+
+static inline void __iso_volatile_neon_store128_np(volatile uint8x16x2_t *ptr, uint8x16x2_t data) {
+  __asm__ __volatile__(
+    "stnp %q[i1], %q[i2], %[out]"
+    : [out] "=m" (*ptr)
+    : [i1]"w" (data.val[0]), [i2]"w" (data.val[1])
+  );
+}
 
 #ifdef notyet
 float32x1x2_t __iso_volatile_neon_load32_np(const volatile float32x1x2_t *);
