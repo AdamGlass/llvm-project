@@ -37,7 +37,16 @@ static inline uint8x16x2_t __iso_volatile_neon_load128_p(const volatile uint8x16
   return result;
 }
 
-uint8x8x2_t __iso_volatile_neon_load64_np(const volatile uint8x8x2_t *);
+uint8x8x2_t __iso_volatile_neon_load64_np(const volatile uint8x8x2_t *ptr) {
+  uint8x8x2_t result;
+  __asm__ __volatile__(
+    "ldnp %d0, %d1, %2"
+    : "=w" (result.val[0]), "=w" (result.val[1])
+    : "m" (*ptr)
+  );
+  return result;
+}
+
 static inline uint8x16x2_t __iso_volatile_neon_load128_np(const volatile uint8x16x2_t *ptr) {
   uint8x16x2_t result;
   __asm__ __volatile__(
@@ -76,11 +85,6 @@ static inline void __iso_volatile_neon_store128_np(volatile uint8x16x2_t *ptr, u
     : [i1]"w" (data.val[0]), [i2]"w" (data.val[1])
   );
 }
-
-#ifdef notyet
-float32x1x2_t __iso_volatile_neon_load32_np(const volatile float32x1x2_t *);
-void __iso_volatile_neon_store32_np(const volatile float32x1x2_t *, float32x1x2_t);
-#endif
 
 #if defined (__cplusplus)
 }
