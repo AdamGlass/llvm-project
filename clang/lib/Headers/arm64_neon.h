@@ -37,7 +37,7 @@ static inline uint8x16x2_t __iso_volatile_neon_load128_p(const volatile uint8x16
   return result;
 }
 
-uint8x8x2_t __iso_volatile_neon_load64_np(const volatile uint8x8x2_t *ptr) {
+static inline uint8x8x2_t __iso_volatile_neon_load64_np(const volatile uint8x8x2_t *ptr) {
   uint8x8x2_t result;
   __asm__ __volatile__(
     "ldnp %d0, %d1, %2"
