@@ -6216,6 +6216,10 @@ void CodeGenModule::EmitGlobalFunctionDefinition(GlobalDecl GD,
 
   SetLLVMFunctionAttributesForDefinition(D, Fn);
 
+  if (getTriple().isWindowsMSVCEnvironment() && (Fn->hasFnAttribute(llvm::Attribute::InlineHint) || Fn->hasFnAttribute(llvm::Attribute::AlwaysInline)) && !Fn->hasLocalLinkage()) {
+    Fn->setLinkage(llvm::Function::ExternalLinkage);
+  }
+
   if (const ConstructorAttr *CA = D->getAttr<ConstructorAttr>())
     AddGlobalCtor(Fn, CA->getPriority());
   if (const DestructorAttr *DA = D->getAttr<DestructorAttr>())
