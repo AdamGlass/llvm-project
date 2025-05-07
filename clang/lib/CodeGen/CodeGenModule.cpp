@@ -6012,6 +6012,19 @@ void CodeGenModule::EmitGlobalFunctionDefinition(GlobalDecl GD,
   auto *Fn = cast<llvm::Function>(GV);
   setFunctionLinkage(GD, Fn);
 
+  // MSVC generates a COMDAT for other compilation units for any used inline.
+  if (auto const *FD = dyn_cast<const FunctionDecl>(D)) {
+    if (getTriple().isWindowsMSVCEnvironment() && (FD->getLanguageLinkage() == CLanguageLinkage)) {
+      auto CheckRedeclForInline = [](const FunctionDecl *Redecl) {
+        return Redecl->isInlineSpecified();
+      };
+
+      if (any_of(FD->redecls(), CheckRedeclForInline)) {
+        Fn->setLinkage(llvm::Function::ExternalLinkage);
+      }
+    }
+  }
+
   // FIXME: this is redundant with part of setFunctionDefinitionAttributes
   setGVProperties(Fn, GD);
 
@@ -6023,10 +6036,6 @@ void CodeGenModule::EmitGlobalFunctionDefinition(GlobalDecl GD,
 
   setNonAliasAttributes(GD, Fn);
   SetLLVMFunctionAttributesForDefinition(D, Fn);
-
-  if (getTriple().isWindowsMSVCEnvironment() && (Fn->hasFnAttribute(llvm::Attribute::InlineHint) || Fn->hasFnAttribute(llvm::Attribute::AlwaysInline)) && !Fn->hasLocalLinkage()) {
-    Fn->setLinkage(llvm::Function::ExternalLinkage);
-  }
 
   if (const ConstructorAttr *CA = D->getAttr<ConstructorAttr>())
     AddGlobalCtor(Fn, CA->getPriority());
