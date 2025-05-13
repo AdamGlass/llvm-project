@@ -4765,3 +4765,10 @@ def DynamicFixup : InheritableAttr {
   let LangOpts = [MicrosoftExt];
   let Documentation = [Undocumented];
 }
+
+def NoShrinkwrapping : InheritableAttr {
+  let Spellings = [Declspec<"noshrinkwrap">];
+  let Subjects = SubjectList<[Function]>;
+  let Documentation = [NoShrinkwrappingDocs];
+  let SimpleHandler = 1;
+}
