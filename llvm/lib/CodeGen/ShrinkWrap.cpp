@@ -977,9 +977,6 @@ bool ShrinkWrap::isShrinkWrapEnabled(const MachineFunction &MF) {
   const TargetFrameLowering *TFI = MF.getSubtarget().getFrameLowering();
 
   if (MF.getFunction().hasFnAttribute(Attribute::NoShrinkWrap))
-    DEBUG_WITH_TYPE("shrink", dbgs() << MF.getName() << " vetoed for shrinkwrap\n");
-
-  if (MF.getFunction().hasFnAttribute(Attribute::NoShrinkWrap))
       return false;
 
   switch (EnableShrinkWrapOpt) {
