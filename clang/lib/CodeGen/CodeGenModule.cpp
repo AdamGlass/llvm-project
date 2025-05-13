@@ -2532,6 +2532,10 @@ void CodeGenModule::SetLLVMFunctionAttributesForDefinition(const Decl *D,
   else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPReq))
     B.addAttribute(llvm::Attribute::StackProtectReq);
 
+  if (D && D->hasAttr<NoShrinkwrappingAttr>()) {
+    B.addAttribute(llvm::Attribute::NoShrinkwrap);
+  }
+
   if (!D) {
     // Non-entry HLSL functions must always be inlined.
     if (getLangOpts().HLSL && !F->hasFnAttribute(llvm::Attribute::NoInline))
