@@ -16,6 +16,33 @@
 
 include "VAXInstrFormats.td"
 
+def imm6zext: IntImmLeaf<i32, [{ return Imm.getZExtValue() <= 63; }]>;
+//def sImm8: ImmLeaf<immSExti8>;
+
+def ADDRrd: ComplexPattern<i32, 2, "SelectAddr", [], []>;
+def gi_ADDRrd: GIComplexOperandMatcher<s32, "SelectAddrOrReg">,GIComplexPatternEquiv<ADDRrd>;
+//def REGsrc: ComplexPattern<(ops node:$reg), AddrOrReg, 1>;
+#ifdef NOTyET2
+
+def REGsrc: ComplexPattern<(ops GRPC:$reg), "AddrOrReg", 1>;
+def REGdst: ComplexPattern<(ops GRPCD:$reg), "AddrOrRegDst", 1>;
+def ADDRrd: ComplexPattern<(ops GRPC:$reg), "AddrOrReg", 1>;
+def ADDRimm32: ComplexPattern<(ops imm32:imm), "AddrOrReg", 1>;
+def ADDRri8: ComplexPattern<(ops GRPC:$reg, simm8:$val>, "AddrOrReg", 2>;
+def ADDRri16: ComplexPattern<(ops GRPC:$reg, simm16:$val>, "AddrOrReg", 2>;
+def ADDRri32: ComplexPattern<(ops GRPC:$reg, simm32:$val>, "AddrOrReg", 2>;
+
+#endif
+
+def VAXRet : SDNode<"VAXISD::RET", SDTNone,
+                      [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
+
+let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
+    def Ret : InstVAX<(outs), (ins), "ret", [(VAXRet)]>;
+}
+
+#ifdef DEAD
+
 def MEMrd : Operand<i32> {
   let MIOperandInfo = (ops GPRC, i32imm);
 }
@@ -190,3 +217,4 @@ def RegMask : PseudoInstVAX<(outs),
                             (ins i32imm:$i),
                             ".error",
                             []>;
+#endif

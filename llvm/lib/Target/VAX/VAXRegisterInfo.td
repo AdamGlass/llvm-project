@@ -39,4 +39,6 @@ def GPRC : RegisterClass<"VAX", [i32], 32,
 
 def SR :  RegisterClass<"VAX", [i32], 32, (add PSL)>;
 
+def GPRCD :  RegisterClass<"VAX", [i32], 32, (add (sub GPRC, PC, PSL))>;
+
 def GPRCX :  RegisterClass<"VAX", [i32], 32, (add (sub GPRC, SP, PC, PSL))>;
