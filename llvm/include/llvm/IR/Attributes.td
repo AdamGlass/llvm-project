@@ -349,7 +349,7 @@ def MarkedForWindowsHotPatching : EnumAttr<"marked_for_windows_hot_patching", [F
 def AllowDirectAccessInHotPatchFunction : EnumAttr<"allow_direct_access_in_hot_patch_function", []>;
 
 /// Function should not be shrinkwrapped
-def NoShrinkwrap : EnumAttr<"noshrinkwrap", [FnAttr]>;
+def NoShrinkWrap : EnumAttr<"noshrinkwrap", [FnAttr]>;
 
 /// Target-independent string attributes.
 def LessPreciseFPMAD : StrBoolAttr<"less-precise-fpmad">;
