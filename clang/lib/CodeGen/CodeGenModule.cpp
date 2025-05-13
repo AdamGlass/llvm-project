@@ -2532,8 +2532,8 @@ void CodeGenModule::SetLLVMFunctionAttributesForDefinition(const Decl *D,
   else if (isStackProtectorOn(LangOpts, getTriple(), LangOptions::SSPReq))
     B.addAttribute(llvm::Attribute::StackProtectReq);
 
-  if (D && D->hasAttr<NoShrinkwrappingAttr>()) {
-    B.addAttribute(llvm::Attribute::NoShrinkwrap);
+  if (D && D->hasAttr<NoShrinkWrappingAttr>()) {
+    B.addAttribute(llvm::Attribute::NoShrinkWrap);
   }
 
   if (!D) {

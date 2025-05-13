@@ -2245,7 +2245,7 @@ static Attribute::AttrKind getAttrFromCode(uint64_t Code) {
   case bitc::ATTR_KIND_CAPTURES:
     return Attribute::Captures;
   case bitc::ATTR_KIND_NO_SHRINKWRAP:
-    return Attribute::NoShrinkwrap;
+    return Attribute::NoShrinkWrap;
   }
 }
 

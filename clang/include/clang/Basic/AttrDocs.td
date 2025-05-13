@@ -9413,10 +9413,10 @@ diagnostics with code like:
   }];
 }
 
-def NoShrinkwrappingDocs : Documentation {
+def NoShrinkWrappingDocs : Documentation {
   let Category = DocCatFunction;
   let Content = [{
-  The ``noshrinkwrapping`` attribute can be placed on functions to exclude the
-  function from shrinkwrapping.
+  The ``__declspec(noshrinkwrap)`` attribute disables the shrinkwrapping
+  process for this function.
   }];
 }

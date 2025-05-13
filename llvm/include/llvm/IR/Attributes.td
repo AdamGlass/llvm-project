@@ -390,7 +390,7 @@ def CoroDestroyOnlyWhenComplete : EnumAttr<"coro_only_destroy_when_complete", In
 def CoroElideSafe : EnumAttr<"coro_elide_safe", IntersectPreserve, [FnAttr]>;
 
 /// Function should not be shrinkwrapped
-def NoShrinkwrap : EnumAttr<"noshrinkwrap", [FnAttr]>;
+def NoShrinkWrap : EnumAttr<"noshrinkwrap", [FnAttr]>;
 
 /// Target-independent string attributes.
 def LessPreciseFPMAD : StrBoolAttr<"less-precise-fpmad">;
