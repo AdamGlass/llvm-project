@@ -5174,3 +5174,10 @@ def NonString : InheritableAttr {
   let Subjects = SubjectList<[Var, Field]>;
   let Documentation = [NonStringDocs];
 }
+
+def NoShrinkwrapping : InheritableAttr {
+  let Spellings = [Declspec<"noshrinkwrap">];
+  let Subjects = SubjectList<[Function]>;
+  let Documentation = [NoShrinkwrappingDocs];
+  let SimpleHandler = 1;
+}

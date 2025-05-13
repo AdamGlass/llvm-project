@@ -389,6 +389,9 @@ def CoroDestroyOnlyWhenComplete : EnumAttr<"coro_only_destroy_when_complete", In
 /// pipeline to perform elide on the call or invoke instruction.
 def CoroElideSafe : EnumAttr<"coro_elide_safe", IntersectPreserve, [FnAttr]>;
 
+/// Function should not be shrinkwrapped
+def NoShrinkwrap : EnumAttr<"noshrinkwrap", [FnAttr]>;
+
 /// Target-independent string attributes.
 def LessPreciseFPMAD : StrBoolAttr<"less-precise-fpmad">;
 def NoInfsFPMath : StrBoolAttr<"no-infs-fp-math">;

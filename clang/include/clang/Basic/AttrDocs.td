@@ -9412,3 +9412,13 @@ diagnostics with code like:
   __attribute__((nonstring)) char NotAStr[3] = "foo"; // Not diagnosed
   }];
 }
+
+def NoShrinkwrappingDocs : Documentation {
+  let Category = DocCatFunction;
+  let Content = [{
+  The ``noshrinkwrapping`` attribute can be placed on functions to exclude the
+  function from shrinkwrapping.
+  }];
+}
+
+>>>>>>> 9bbd15c221f8 (initial attempt)
