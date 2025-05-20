@@ -2189,6 +2189,8 @@ static Attribute::AttrKind getAttrFromCode(uint64_t Code) {
     return Attribute::AllowDirectAccessInHotPatchFunction;
   case bitc::ATTR_KIND_MARKED_FOR_WINDOWS_HOT_PATCHING:
     return Attribute::MarkedForWindowsHotPatching;
+  case bitc::ATTR_KIND_NO_SHRINKWRAP:
+    return Attribute::NoShrinkWrap;
   }
 }
 
