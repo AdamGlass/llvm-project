@@ -31,6 +31,7 @@
 #include "llvm/CodeGen/MachineModuleInfoImpls.h"
 #include "llvm/CodeGen/MachineOperand.h"
 #include "llvm/CodeGen/StackMaps.h"
+#include "llvm/CodeGen/WinEHFuncInfo.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/Mangler.h"
@@ -2554,6 +2555,7 @@ void X86AsmPrinter::emitInstruction(const MachineInstr *MI) {
       EmitAndCountInstruction(MCInstBuilder(X86::REX64_PREFIX));
       emitCallInstruction(TmpInst);
       emitNop(*OutStreamer, 5, Subtarget);
+      emitNopAfterCallForWindowsEH(MI);
       return;
     }
 
@@ -2574,6 +2576,7 @@ void X86AsmPrinter::emitInstruction(const MachineInstr *MI) {
       // For Import Call Optimization to work, we need a 3-byte nop after the
       // call instruction.
       emitNop(*OutStreamer, 3, Subtarget);
+      emitNopAfterCallForWindowsEH(MI);
       return;
     }
     break;
@@ -2607,6 +2610,7 @@ void X86AsmPrinter::emitInstruction(const MachineInstr *MI) {
 
   if (MI->isCall()) {
     emitCallInstruction(TmpInst);
+    emitNopAfterCallForWindowsEH(MI);
     return;
   }
 
@@ -2626,6 +2630,66 @@ void X86AsmPrinter::emitCallInstruction(const llvm::MCInst &MCI) {
   SMShadowTracker.emitShadowPadding(*OutStreamer, getSubtargetInfo());
   // Then emit the call
   OutStreamer->emitInstruction(MCI, getSubtargetInfo());
+}
+
+// This function inserts a NOP after CALL instructions, so that Windows SEH
+// IP2State tables have the correct information. All of the following
+// requirements must be true:
+//
+// * targeting Windows
+// * the end of the current CALL* instruction is aligned to a transition
+//   between SEH states
+// * TODO: only when generating IP2State tables
+//
+// TODO: Figure out how this interacts with import call optimization, which
+// also inserts NOPs after a call.  It may be the case that import call
+// optimization still requires an additional NOP after the NOPs that it
+// adds, just so that IP2State works correctly.
+//
+// For now, when import call optimization is enabled _and_ there's an EH
+// state transition, we insert both the 5-byte NOP sequence that import call
+// optimization needs *and* we insert a single-byte NOP afterward for the EH
+// state transition.
+//
+// TODO(perf): do not insert NOP for TAILJMP*
+void X86AsmPrinter::emitNopAfterCallForWindowsEH(const llvm::MachineInstr* MI) {
+  // AMD64 requires inserting NOPs but X86 does not.
+  if (!this->Subtarget->isTargetWin64()) {
+    return;
+  }
+
+  MachineBasicBlock::const_iterator MBBI(MI);
+  ++MBBI;
+  auto End = MI->getParent()->end();
+  while (true) {
+    if (MBBI == End) {
+      // The CALL is at the end of the BB. Conservatively, we add a NOOP after
+      // this call.
+      break;
+    }
+
+    // There is an instruction after this CALL. Check to see what it does.
+    const MachineInstr& FollowingMI = *MBBI;
+    if (FollowingMI.getOpcode() == TargetOpcode::EH_LABEL) {
+      break;
+    }
+
+    if (!FollowingMI.isPseudo() && !FollowingMI.isMetaInstruction()) {
+      // We found a real instruction. During the CALL, the return IP will point
+      // to this instruction. Since this instruction is part of the same EH
+      // state, the IP2State table will be accurate; there is no need to insert
+      // a NOP.
+      return;
+    }
+
+    // Ignore this instruction and keep searching. Because these instructions
+    // do not generate any machine code, they cannot prevent the IP2State
+    // table from pointing at the wrong instruction during a CALL.
+    ++MBBI;
+  }
+
+  // If we reach this point, then a NOP is needed.
+  EmitAndCountInstruction(MCInstBuilder(X86::NOOP));
 }
 
 void X86AsmPrinter::emitLabelAndRecordForImportCallOptimization(

@@ -147,6 +147,7 @@ class LLVM_LIBRARY_VISIBILITY X86AsmPrinter : public AsmPrinter {
                                     MCSymbol *LazyPointer) override;
 
   void emitCallInstruction(const llvm::MCInst &MCI);
+  void emitNopAfterCallForWindowsEH(const llvm::MachineInstr* MI);
 
   // Emits a label to mark the next instruction as being relevant to Import Call
   // Optimization.
