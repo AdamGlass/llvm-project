@@ -267,6 +267,17 @@ __popcntq(unsigned long long __A)
 #define _popcnt64(A) __popcntq((A))
 #endif /* __x86_64__ */
 
+/// Gets the caller's EFLAGS value by capturing it in the prologue.
+///
+/// \headerfile <x86intrin.h>
+///
+/// \code
+/// unsigned int __getcallerseflags();
+/// \endcode
+///
+/// \returns A 32-bit integer containing the EFLAGS value captured in the prolog.
+#define __getcallerseflags(A) __builtin_getcallerseflags_u32()
+
 #ifdef __x86_64__
 /// Returns the program status-and-control \c RFLAGS register with the \c VM
 ///    and \c RF flags cleared.
