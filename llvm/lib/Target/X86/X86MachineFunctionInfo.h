@@ -164,6 +164,9 @@ class X86MachineFunctionInfo : public MachineFunctionInfo {
 
   std::optional<int> SwiftAsyncContextFrameIdx;
 
+  bool needFlags = false;
+  std::optional<int> FlagsFrameIdx;
+
   // Preallocated fields are only used during isel.
   // FIXME: Can we find somewhere else to store these?
   DenseMap<const Value *, size_t> PreallocatedIds;
@@ -301,6 +304,13 @@ public:
     return SwiftAsyncContextFrameIdx;
   }
   void setSwiftAsyncContextFrameIdx(int v) { SwiftAsyncContextFrameIdx = v; }
+
+  bool NeedFlags() const { return needFlags; }
+  void setNeedFlags(bool v) { needFlags = v; }
+  void setFlagsFrameIdx(int v) { FlagsFrameIdx = v; }
+  std::optional<int> getFlagsFrameIdx() const {
+    return FlagsFrameIdx;
+  }
 
   size_t getPreallocatedIdForCallSite(const Value *CS) {
     auto Insert = PreallocatedIds.insert({CS, PreallocatedIds.size()});

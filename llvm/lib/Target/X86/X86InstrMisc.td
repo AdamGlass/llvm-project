@@ -123,6 +123,16 @@ let isPseudo = 1, mayLoad = 1, mayStore = 1,
   def RDFLAGS64 : PseudoI<(outs GR64:$dst), (ins),
                    [(set GR64:$dst, (int_x86_flags_read_u64))]>,
                 Requires<[In64BitMode]>;
+
+  let Uses = [ESP] in
+  def RDCFLAGS32_32 : PseudoI<(outs GR32:$dst), (ins),
+                   [(set GR32:$dst, (int_x86_flags_callers_u32))]>,
+                Requires<[Not64BitMode]>;
+
+  let Uses = [RSP] in
+  def RDCFLAGS32_64 : PseudoI<(outs GR32:$dst), (ins),
+                   [(set GR32:$dst, (int_x86_flags_callers_u32))]>,
+                Requires<[In64BitMode]>;
 }
 
 let isPseudo = 1, mayLoad = 1, mayStore = 1,
