@@ -1560,6 +1560,13 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
   DebugLoc DL;
   Register ArgBaseReg;
 
+  // XXX unclear if right spot
+  if (X86FI->NeedFlags()) {
+    unsigned PUSHf = Is64Bit ? X86::PUSHF64 : X86::PUSHF32;
+    BuildMI(MBB, MBBI, DL, TII.get(PUSHf))
+        .setMIFlag(MachineInstr::FrameSetup);
+  }
+
   // Emit extra prolog for argument stack slot reference.
   if (auto *MI = X86FI->getStackPtrSaveMI()) {
     // MI is lea instruction that created in X86ArgumentStackSlotPass.
@@ -1764,13 +1771,6 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
       HasWinCFI = true;
       BuildMI(MBB, MBBI, DL, TII.get(X86::SEH_PushReg))
           .addImm(FramePtr)
-          .setMIFlag(MachineInstr::FrameSetup);
-    }
-
-    // XXX unclear if right spot
-    if (X86FI->NeedFlags()) {
-      unsigned PUSHf = Is64Bit ? X86::PUSHF64 : X86::PUSHF32;
-      BuildMI(MBB, MBBI, DL, TII.get(PUSHf))
           .setMIFlag(MachineInstr::FrameSetup);
     }
 
@@ -2379,6 +2379,16 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
                         !MF.getTarget().getTargetTriple().isOSWindows()) &&
                        MF.needsFrameMoves();
 
+  // XXX unclear if right spot
+  if (X86FI->NeedFlags()) {
+    unsigned POPf = Is64Bit ? X86::POP64r : X86::POP32r;
+    Register Dest = Is64Bit ? X86::RCX : X86::ECX;
+    BuildMI(MBB, MBBI, DL, TII.get(POPf))
+        .addReg(Dest)
+        .setMIFlag(MachineInstr::FrameDestroy);
+    --MBBI;
+  }
+
   Register ArgBaseReg;
   if (auto *MI = X86FI->getStackPtrSaveMI()) {
     unsigned Opc = X86::LEA32r;
@@ -2519,16 +2529,6 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
 
     if (X86FI->hasSwiftAsyncContext())
       LEAAmount -= 16;
-
-    // XXX unclear if right spot
-    if (X86FI->NeedFlags()) {
-      unsigned POPf = Is64Bit ? X86::POP64r : X86::POP32r;
-      Register Dest = Is64Bit ? X86::RCX : X86::ECX;
-      BuildMI(MBB, MBBI, DL, TII.get(POPf))
-          .addReg(Dest)
-          .setMIFlag(MachineInstr::FrameDestroy);
-      --MBBI;
-    }
 
     // There are only two legal forms of epilogue:
     // - add SEHAllocationSize, %rsp

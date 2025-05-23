@@ -276,7 +276,7 @@ __popcntq(unsigned long long __A)
 /// \endcode
 ///
 /// \returns A 32-bit integer containing the EFLAGS value captured in the prolog.
-#define __getcallerseflags(A) __builtin_getcallerseflags_u32()
+#define __getcallerseflags(A) __builtin_ia32_getcallerseflags_u32()
 
 #ifdef __x86_64__
 /// Returns the program status-and-control \c RFLAGS register with the \c VM

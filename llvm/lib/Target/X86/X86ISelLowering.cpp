@@ -26867,21 +26867,24 @@ static SDValue LowerINTRINSIC_W_CHAIN(SDValue Op, const X86Subtarget &Subtarget,
     case llvm::Intrinsic::x86_flags_read_u32:
     case llvm::Intrinsic::x86_flags_read_u64:
     case llvm::Intrinsic::x86_flags_write_u32:
-    case llvm::Intrinsic::x86_flags_write_u64:
-    case llvm::Intrinsic::x86_flags_callers_u32: {
+    case llvm::Intrinsic::x86_flags_write_u64: {
       // We need a frame pointer because this will get lowered to a PUSH/POP
       // sequence.
       MachineFrameInfo &MFI = DAG.getMachineFunction().getFrameInfo();
       MFI.setHasCopyImplyingStackAdjustment(true);
 
-      if (IntNo == llvm::Intrinsic::x86_flags_callers_u32) {
-        auto &MF = DAG.getMachineFunction();
-        auto *X86FI = MF.getInfo<X86MachineFunctionInfo>();
-        X86FI->setNeedFlags(true);
-      }
-
       // Don't do anything here, we will expand the associated psuedo
       // instructions in expandPostRAPseudo.
+      return Op;
+    }
+    case llvm::Intrinsic::x86_flags_callers_u32: {
+      // Ensure that the flags are pushed/popped in the prologue/epilogue.
+      auto &MF = DAG.getMachineFunction();
+      auto *X86FI = MF.getInfo<X86MachineFunctionInfo>();
+      X86FI->setNeedFlags(true);
+
+      // Don't do anything here, we will expand the associated psuedo
+      // instruction in expandPostRAPseudo.
       return Op;
     }
     case Intrinsic::x86_lwpins32:
