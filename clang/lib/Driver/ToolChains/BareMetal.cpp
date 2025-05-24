@@ -162,9 +162,11 @@ static bool isPPCBareMetal(const llvm::Triple &Triple) {
          Triple.getEnvironment() == llvm::Triple::EABI;
 }
 
-static void findMultilibsFromYAML(const ToolChain &TC, const Driver &D,
-                                  StringRef MultilibPath, const ArgList &Args,
-                                  DetectedMultilibs &Result) {
+static void
+findMultilibsFromYAML(const ToolChain &TC, const Driver &D,
+                      StringRef MultilibPath, const ArgList &Args,
+                      DetectedMultilibs &Result,
+                      SmallVector<StringRef> &CustomFlagsMacroDefines) {
   llvm::ErrorOr<std::unique_ptr<llvm::MemoryBuffer>> MB =
       D.getVFS().getBufferForFile(MultilibPath);
   if (!MB)
@@ -175,7 +177,8 @@ static void findMultilibsFromYAML(const ToolChain &TC, const Driver &D,
   if (ErrorOrMultilibSet.getError())
     return;
   Result.Multilibs = ErrorOrMultilibSet.get();
-  if (Result.Multilibs.select(D, Flags, Result.SelectedMultilibs))
+  if (Result.Multilibs.select(D, Flags, Result.SelectedMultilibs,
+                              &CustomFlagsMacroDefines))
     return;
   D.Diag(clang::diag::warn_drv_missing_multilib) << llvm::join(Flags, " ");
   std::stringstream ss;
@@ -234,9 +237,13 @@ void BareMetal::findMultilibs(const Driver &D, const llvm::Triple &Triple,
     // If multilib.yaml is found, update sysroot so it doesn't use a target
     // specific suffix
     SysRoot = computeBaseSysRoot(D, /*IncludeTriple=*/false);
-    findMultilibsFromYAML(*this, D, *MultilibPath, Args, Result);
+    SmallVector<StringRef> CustomFlagMacroDefines;
+    findMultilibsFromYAML(*this, D, *MultilibPath, Args, Result,
+                          CustomFlagMacroDefines);
     SelectedMultilibs = Result.SelectedMultilibs;
     Multilibs = Result.Multilibs;
+    MultilibMacroDefines.append(CustomFlagMacroDefines.begin(),
+                                CustomFlagMacroDefines.end());
   } else if (isRISCVBareMetal(Triple)) {
     if (findRISCVMultilibs(D, Triple, Args, Result)) {
       SelectedMultilibs = Result.SelectedMultilibs;
@@ -496,19 +503,10 @@ void baremetal::Linker::ConstructJob(Compilation &C, const JobAction &JA,
     CmdArgs.push_back("-lc");
   }
 
-  if (D.isUsingLTO()) {
-    assert(!Inputs.empty() && "Must have at least one input.");
-    // Find the first filename InputInfo object.
-    auto Input = llvm::find_if(
-        Inputs, [](const InputInfo &II) -> bool { return II.isFilename(); });
-    if (Input == Inputs.end())
-      // For a very rare case, all of the inputs to the linker are
-      // InputArg. If that happens, just use the first InputInfo.
-      Input = Inputs.begin();
-
-    addLTOOptions(TC, Args, CmdArgs, Output, *Input,
+  if (D.isUsingLTO())
+    addLTOOptions(TC, Args, CmdArgs, Output, Inputs,
                   D.getLTOMode() == LTOK_Thin);
-  }
+
   if (TC.getTriple().isRISCV())
     CmdArgs.push_back("-X");
 
@@ -550,4 +548,9 @@ SanitizerMask BareMetal::getSupportedSanitizers() const {
     Res |= SanitizerKind::KernelHWAddress;
   }
   return Res;
+}
+
+SmallVector<std::string>
+BareMetal::getMultilibMacroDefinesStr(llvm::opt::ArgList &Args) const {
+  return MultilibMacroDefines;
 }
