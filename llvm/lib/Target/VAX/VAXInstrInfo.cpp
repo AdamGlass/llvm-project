@@ -44,6 +44,7 @@ VAXInstrInfo::VAXInstrInfo()
 {
 }
 
+#if 0
 void VAXInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
                                         MachineBasicBlock::iterator MI, Register DestReg,
                                         int FrameIndex, const TargetRegisterClass *RC,
@@ -52,3 +53,4 @@ void VAXInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,
 
   assert(0);
 }
+#endif

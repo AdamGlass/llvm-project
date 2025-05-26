@@ -72,6 +72,9 @@
 /* Define if the SystemZ target is built in */
 #cmakedefine01 LLVM_HAS_SYSTEMZ_TARGET
 
+/* Define if the VAX target is built in */
+#cmakedefine01 LLVM_HAS_VAX_TARGET
+
 /* Define if the VE target is built in */
 #cmakedefine01 LLVM_HAS_VE_TARGET
 
