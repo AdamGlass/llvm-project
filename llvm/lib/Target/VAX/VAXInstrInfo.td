@@ -31,7 +31,7 @@ def imm6 : PatLeaf<(imm), [{
 
 def VAXRet : SDNode<"VAXISD::RET", SDTNone,
                       [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
-def VAXRegMask : SDNode<"VAXISD::REGMASK", SDTUnaryOp,
+def VAXRegMask : SDNode<"VAXISD::PROCENTRYMASK", SDTUnaryOp,
                       [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
 
 //
@@ -186,7 +186,7 @@ let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
 // FAUX Load/Store instructions
 //
 
-def RegMask : PseudoInstVAX<(outs),
-                            (ins i32imm:$i),
-                            ".error",
-                            []>;
+def PROCENTRYMASK : PseudoInstVAX<(outs),
+                       (ins i32imm:$i),
+                        ".error",
+                       []>;
