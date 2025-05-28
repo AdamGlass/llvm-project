@@ -48,6 +48,7 @@
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/MC/MCSymbolELF.h"
 #include "llvm/MC/TargetRegistry.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Target/TargetLoweringObjectFile.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Transforms/CFGuard.h"
@@ -341,6 +342,7 @@ MCOperand X86MCInstLower::LowerMachineOperand(const MachineInstr *MI,
                                               const MachineOperand &MO) const {
   switch (MO.getType()) {
   default:
+    DEBUG_WITH_TYPE("damn", llvm::dbgs() << "type: " << (unsigned int) MO.getType() << "\n");
     MI->print(errs());
     llvm_unreachable("unknown operand type");
   case MachineOperand::MO_Register:

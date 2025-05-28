@@ -6260,18 +6260,6 @@ bool X86InstrInfo::expandPostRAPseudo(MachineInstr &MI) const {
     return true;
   }
 
-  case X86::RDCFLAGS32_32:
-  case X86::RDCFLAGS32_64: {
-    MachineBasicBlock &MBB = *MIB->getParent();
-
-    BuildMI(MBB, MI, MIB->getDebugLoc(),
-            get(X86::MOV32rm))
-        .addReg(MI.getOperand(0).getReg());
-    // XXXX some other operand
-    MI.eraseFromParent();
-    return true;
-  }
-
   // KNL does not recognize dependency-breaking idioms for mask registers,
   // so kxnor %k1, %k1, %k2 has a RAW dependence on %k1.
   // Using %k0 as the undef input register is a performance heuristic based

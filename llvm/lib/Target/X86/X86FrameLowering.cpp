@@ -1560,11 +1560,20 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
   DebugLoc DL;
   Register ArgBaseReg;
 
+  DEBUG_WITH_TYPE("damn", llvm::dbgs() << "before MFI\n");
+  DEBUG_WITH_TYPE("damn", MF.print(dbgs()));
+  DEBUG_WITH_TYPE("damn", llvm::dbgs() << "after MFI\n");
   // XXX unclear if right spot
   if (X86FI->NeedFlags()) {
     unsigned PUSHf = Is64Bit ? X86::PUSHF64 : X86::PUSHF32;
+    uint64_t Size = Is64Bit ? 8 : 4;
+    StackSize += Size;
+    MFI.setStackSize(StackSize);
+
     BuildMI(MBB, MBBI, DL, TII.get(PUSHf))
         .setMIFlag(MachineInstr::FrameSetup);
+    int FI = MFI.CreateFixedObject(Size, StackSize, false);
+    X86FI->setFlagsFrameIdx(FI);
   }
 
   // Emit extra prolog for argument stack slot reference.
@@ -4214,6 +4223,29 @@ void X86FrameLowering::adjustFrameForMsvcCxxEh(MachineFunction &MF) const {
       .addImm(-2);
 }
 
+void X86FrameLowering::replaceFlagsPseudo(
+    MachineFunction &MF) const {
+  X86MachineFunctionInfo *X86FI = MF.getInfo<X86MachineFunctionInfo>();
+  int FI = X86FI->getFlagsFrameIdx().value();
+
+  for (MachineBasicBlock &MBB : MF) {
+    MachineBasicBlock::iterator MI = MBB.begin(), E = MBB.end();
+    while (MI != E) {
+      MachineBasicBlock::iterator NMI = std::next(MI);
+      unsigned Opc = MI->getOpcode();
+
+      if ((Opc == X86::RDCFLAGS32_32) || (Opc == X86::RDCFLAGS32_64)) {
+        Register DstReg = MI->getOperand(0).getReg();
+        int FI = X86FI->getFlagsFrameIdx().value();
+
+        addFrameReference(BuildMI(MBB, MI, MI->getDebugLoc(), TII.get(X86::MOV32rm), DstReg), FI);
+        MI->eraseFromParent();
+      }
+      MI = NMI;
+    }
+  }
+}
+
 void X86FrameLowering::processFunctionBeforeFrameIndicesReplaced(
     MachineFunction &MF, RegScavenger *RS) const {
   auto *X86FI = MF.getInfo<X86MachineFunctionInfo>();
@@ -4225,6 +4257,12 @@ void X86FrameLowering::processFunctionBeforeFrameIndicesReplaced(
   if (MachineInstr *MI = X86FI->getStackPtrSaveMI()) {
     MI->eraseFromParent();
     X86FI->setStackPtrSaveMI(nullptr);
+  }
+
+  // Pseudo-instruction in this routine needs the EFLAGS pushed in the
+  // prologue.  Find all instances and replace now with frame index reference.
+  if (X86FI->NeedFlags()) {
+    replaceFlagsPseudo(MF);
   }
 }
 

@@ -129,6 +129,8 @@ public:
   void processFunctionBeforeFrameFinalized(MachineFunction &MF,
                                            RegScavenger *RS) const override;
 
+  void replaceFlagsPseudo(MachineFunction &MF) const;
+
   void
   processFunctionBeforeFrameIndicesReplaced(MachineFunction &MF,
                                             RegScavenger *RS) const override;
