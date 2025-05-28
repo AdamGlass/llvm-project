@@ -342,8 +342,6 @@ MCOperand X86MCInstLower::LowerMachineOperand(const MachineInstr *MI,
                                               const MachineOperand &MO) const {
   switch (MO.getType()) {
   default:
-    DEBUG_WITH_TYPE("damn", llvm::dbgs() << "type: " << (unsigned int) MO.getType() << "\n");
-    MI->print(errs());
     llvm_unreachable("unknown operand type");
   case MachineOperand::MO_Register:
     // Ignore all implicit register operands.
