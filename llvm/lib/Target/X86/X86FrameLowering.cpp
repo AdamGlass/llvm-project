@@ -1560,22 +1560,6 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
   DebugLoc DL;
   Register ArgBaseReg;
 
-  DEBUG_WITH_TYPE("damn", llvm::dbgs() << "before MFI\n");
-  DEBUG_WITH_TYPE("damn", MF.print(dbgs()));
-  DEBUG_WITH_TYPE("damn", llvm::dbgs() << "after MFI\n");
-  // XXX unclear if right spot
-  if (X86FI->NeedFlags()) {
-    unsigned PUSHf = Is64Bit ? X86::PUSHF64 : X86::PUSHF32;
-    uint64_t Size = Is64Bit ? 8 : 4;
-    StackSize += Size;
-    MFI.setStackSize(StackSize);
-
-    BuildMI(MBB, MBBI, DL, TII.get(PUSHf))
-        .setMIFlag(MachineInstr::FrameSetup);
-    int FI = MFI.CreateFixedObject(Size, StackSize, false);
-    X86FI->setFlagsFrameIdx(FI);
-  }
-
   // Emit extra prolog for argument stack slot reference.
   if (auto *MI = X86FI->getStackPtrSaveMI()) {
     // MI is lea instruction that created in X86ArgumentStackSlotPass.
@@ -1620,6 +1604,14 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
   const bool EmitStackProbeCall =
       STI.getTargetLowering()->hasStackProbeSymbol(MF);
   unsigned StackProbeSize = STI.getTargetLowering()->getStackProbeSize(MF);
+
+  // XXX unclear if right spot
+  if (X86FI->NeedFlags()) {
+    unsigned PUSHf = Is64Bit ? X86::PUSHF64 : X86::PUSHF32;
+
+    BuildMI(MBB, MBBI, DL, TII.get(PUSHf))
+        .setMIFlag(MachineInstr::FrameSetup);
+  }
 
   if (HasFP && X86FI->hasSwiftAsyncContext()) {
     switch (MF.getTarget().Options.SwiftAsyncFramePointer) {
@@ -2388,16 +2380,6 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
                         !MF.getTarget().getTargetTriple().isOSWindows()) &&
                        MF.needsFrameMoves();
 
-  // XXX unclear if right spot
-  if (X86FI->NeedFlags()) {
-    unsigned POPf = Is64Bit ? X86::POP64r : X86::POP32r;
-    Register Dest = Is64Bit ? X86::RCX : X86::ECX;
-    BuildMI(MBB, MBBI, DL, TII.get(POPf))
-        .addReg(Dest)
-        .setMIFlag(MachineInstr::FrameDestroy);
-    --MBBI;
-  }
-
   Register ArgBaseReg;
   if (auto *MI = X86FI->getStackPtrSaveMI()) {
     unsigned Opc = X86::LEA32r;
@@ -2442,6 +2424,16 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
     NumBytes = StackSize - CSSize - TailCallArgReserveSize;
   }
   uint64_t SEHStackAllocAmt = NumBytes;
+
+  // XXX unclear if right spot
+  if (X86FI->NeedFlags()) {
+    unsigned POPf = Is64Bit ? X86::POP64r : X86::POP32r;
+    Register Dest = Is64Bit ? X86::RCX : X86::ECX;
+    BuildMI(MBB, MBBI, DL, TII.get(POPf))
+        .addReg(Dest)
+        .setMIFlag(MachineInstr::FrameDestroy);
+    --MBBI;
+  }
 
   // AfterPop is the position to insert .cfi_restore.
   MachineBasicBlock::iterator AfterPop = MBBI;
@@ -2846,6 +2838,12 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
       X86FI->setHasSEHFramePtrSave(true);
       X86FI->setSEHFramePtrSaveIndex(FI);
     }
+  }
+
+  // XXX Right place?
+  if (X86FI->NeedFlags()) {
+    int FI = MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
+    X86FI->setFlagsFrameIdx(FI);
   }
 
   if (hasFP(MF)) {
