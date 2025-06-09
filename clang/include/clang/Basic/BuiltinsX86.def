@@ -36,7 +36,7 @@ TARGET_BUILTIN(__builtin_ia32_undef512, "V8d", "ncV:512:", "")
 //
 TARGET_BUILTIN(__builtin_ia32_readeflags_u32, "Ui", "n", "")
 TARGET_BUILTIN(__builtin_ia32_writeeflags_u32, "vUi", "n", "")
-TARGET_BUILTIN(__builtin_ia32_getcallerseflags_u32, "Ui", "n", "")
+TARGET_HEADER_BUILTIN(__getcallerseflags, "Ui", "n", INTRIN_H, ALL_LANGUAGES, "")
 
 // MMX
 //

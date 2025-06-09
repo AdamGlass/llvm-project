@@ -39,7 +39,7 @@ let TargetPrefix = "x86" in {
         Intrinsic<[], [llvm_i32_ty], []>;
   def int_x86_flags_write_u64 : ClangBuiltin<"__builtin_ia32_writeeflags_u64">,
         Intrinsic<[], [llvm_i64_ty], []>;
-  def int_x86_flags_callers_u32 : ClangBuiltin<"__builtin_ia32_getcallerseflags_u32">,
+  def int_x86_flags_callers_u32 : ClangBuiltin<"__getcallerseflags">,
         Intrinsic<[llvm_i32_ty], [], []>;
 }
 
