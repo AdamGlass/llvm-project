@@ -1605,14 +1605,6 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
       STI.getTargetLowering()->hasStackProbeSymbol(MF);
   unsigned StackProbeSize = STI.getTargetLowering()->getStackProbeSize(MF);
 
-  // XXX unclear if right spot
-  if (X86FI->NeedFlags()) {
-    unsigned PUSHf = Is64Bit ? X86::PUSHF64 : X86::PUSHF32;
-
-    BuildMI(MBB, MBBI, DL, TII.get(PUSHf))
-        .setMIFlag(MachineInstr::FrameSetup);
-  }
-
   if (HasFP && X86FI->hasSwiftAsyncContext()) {
     switch (MF.getTarget().Options.SwiftAsyncFramePointer) {
     case SwiftAsyncFramePointerMode::DeploymentBased:
@@ -1869,6 +1861,17 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
         StackSize - (X86FI->getCalleeSavedFrameSize() + TailCallArgReserveSize);
   }
 
+
+  // XXX unclear if right spot
+  if (X86FI->NeedFlags()) {
+    unsigned PUSHf = Is64Bit ? X86::PUSHF64 : X86::PUSHF32;
+
+    BuildMI(MBB, MBBI, DL, TII.get(PUSHf))
+        .setMIFlag(MachineInstr::FrameSetup);
+    //    NumBytes += SlotSize;
+    //    StackSize += SlotSize;
+  }
+
   // Update the offset adjustment, which is mainly used by codeview to translate
   // from ESP to VFRAME relative local variable offsets.
   if (!IsFunclet) {
@@ -1976,6 +1979,7 @@ void X86FrameLowering::emitPrologue(MachineFunction &MF,
         BuildMI(MBB, MBBI, DL, TII.get(X86::PUSH64r))
             .addReg(X86::RAX, RegState::Kill)
             .setMIFlag(MachineInstr::FrameSetup);
+        DEBUG_WITH_TYPE("damn", dbgs() << " Generated PUSH\r\n");
       } else {
         // Save EAX
         BuildMI(MBB, MBBI, DL, TII.get(X86::PUSH32r))
@@ -2425,16 +2429,6 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
   }
   uint64_t SEHStackAllocAmt = NumBytes;
 
-  // XXX unclear if right spot
-  if (X86FI->NeedFlags()) {
-    unsigned POPf = Is64Bit ? X86::POP64r : X86::POP32r;
-    Register Dest = Is64Bit ? X86::RCX : X86::ECX;
-    BuildMI(MBB, MBBI, DL, TII.get(POPf))
-        .addReg(Dest)
-        .setMIFlag(MachineInstr::FrameDestroy);
-    --MBBI;
-  }
-
   // AfterPop is the position to insert .cfi_restore.
   MachineBasicBlock::iterator AfterPop = MBBI;
   if (HasFP) {
@@ -2476,6 +2470,15 @@ void X86FrameLowering::emitEpilogue(MachineFunction &MF,
       }
       --MBBI;
     }
+  }
+
+  // XXX unclear if right spot
+  if (X86FI->NeedFlags()) {
+    unsigned POPf = Is64Bit ? X86::POP64r : X86::POP32r;
+    Register Dest = Is64Bit ? X86::RCX : X86::ECX;
+    BuildMI(MBB, MBBI, DL, TII.get(POPf))
+        .addReg(Dest)
+        .setMIFlag(MachineInstr::FrameDestroy);
   }
 
   MachineBasicBlock::iterator FirstCSPop = MBBI;
@@ -2617,7 +2620,13 @@ StackOffset X86FrameLowering::getFrameIndexReference(const MachineFunction &MF,
                                                      Register &FrameReg) const {
   const MachineFrameInfo &MFI = MF.getFrameInfo();
 
+
+
   bool IsFixed = MFI.isFixedObjectIndex(FI);
+  DEBUG_WITH_TYPE("damn", dbgs() << " Reference " << MF.getName() << " FI " << FI<< " Fixed " << IsFixed << "\r\n");
+
+  MFI.print(MF,dbgs());
+
   // We can't calculate offset from frame pointer if the stack is realigned,
   // so enforce usage of stack/base pointer.  The base pointer is used when we
   // have dynamic allocas in addition to dynamic realignment.
@@ -2627,6 +2636,9 @@ StackOffset X86FrameLowering::getFrameIndexReference(const MachineFunction &MF,
     FrameReg = IsFixed ? TRI->getFramePtr() : TRI->getStackRegister();
   else
     FrameReg = TRI->getFrameRegister(MF);
+
+
+  DEBUG_WITH_TYPE("damn", dbgs() << " Reference " << MF.getName() << " FrameReg " << FrameReg << " Fixed " << IsFixed << " Realign " << TRI->hasStackRealignment(MF) << "\r\n");
 
   // Offset will hold the offset from the stack pointer at function entry to the
   // object.
@@ -2638,6 +2650,8 @@ StackOffset X86FrameLowering::getFrameIndexReference(const MachineFunction &MF,
   uint64_t StackSize = MFI.getStackSize();
   bool IsWin64Prologue = MF.getTarget().getMCAsmInfo()->usesWindowsCFI();
   int64_t FPDelta = 0;
+
+  DEBUG_WITH_TYPE("damn", dbgs() << " Reference " << MF.getName() << " Offset " << Offset << " Local " << getOffsetOfLocalArea() << " CSSize " << CSSize << " stacksize " << StackSize << "\r\n");
 
   // In an x86 interrupt, remove the offset we added to account for the return
   // address from any stack object allocated in the caller's frame. Interrupts
@@ -2657,6 +2671,13 @@ StackOffset X86FrameLowering::getFrameIndexReference(const MachineFunction &MF,
     // pointer.
     if (X86FI->getRestoreBasePointer())
       FrameSize += SlotSize;
+
+    // If required, include space for FLAGS push
+    if (X86FI->NeedFlags()) {
+      //      FrameSize += SlotSize;
+      DEBUG_WITH_TYPE("damn", dbgs() << " Correct FrameSize? " << FrameSize << "\r\n");
+    }
+
     uint64_t NumBytes = FrameSize - CSSize;
 
     uint64_t SEHFrameOffset = calculateSetFPREG(NumBytes);
@@ -2673,6 +2694,7 @@ StackOffset X86FrameLowering::getFrameIndexReference(const MachineFunction &MF,
   }
 
   if (FrameReg == TRI->getFramePtr()) {
+
     // Skip saved EBP/RBP
     Offset += SlotSize;
 
@@ -2814,6 +2836,10 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
   auto &WinEHXMMSlotInfo = X86FI->getWinEHXMMSlotInfo();
   int SpillSlotOffset = getOffsetOfLocalArea() + X86FI->getTCReturnAddrDelta();
 
+  DEBUG_WITH_TYPE("damn", dbgs() << "Function " << MF.getName() << " assign\r\n");
+  DEBUG_WITH_TYPE("damn", dbgs() << "Function " << MF.getName() << "  " <<SpillSlotOffset << " offset " << getOffsetOfLocalArea() << "\r\n");
+
+
   int64_t TailCallReturnAddrDelta = X86FI->getTCReturnAddrDelta();
 
   if (TailCallReturnAddrDelta < 0) {
@@ -2840,12 +2866,6 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
     }
   }
 
-  // XXX Right place?
-  if (X86FI->NeedFlags()) {
-    int FI = MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset);
-    X86FI->setFlagsFrameIdx(FI);
-  }
-
   if (hasFP(MF)) {
     // emitPrologue always spills frame register the first thing.
     SpillSlotOffset -= SlotSize;
@@ -2870,6 +2890,15 @@ bool X86FrameLowering::assignCalleeSavedSpillSlots(
       }
     }
   }
+
+  if (X86FI->NeedFlags()) {
+    DEBUG_WITH_TYPE("damn", dbgs() << "Function before needflag " << MF.getName() << "  " << SpillSlotOffset << "\r\n");
+    SpillSlotOffset -= SlotSize;
+    int FI = MFI.CreateFixedSpillStackObject(SlotSize, SpillSlotOffset, true);
+    //    int FI = MFI.CreateFixedObject(SlotSize, SpillSlotOffset, true);
+    X86FI->setFlagsFrameIdx(FI);
+  }
+  DEBUG_WITH_TYPE("damn", dbgs() << "Function after needflag " << MF.getName() << "  " << SpillSlotOffset << "\r\n");
 
   // Strategy:
   // 1. Use push2 when
