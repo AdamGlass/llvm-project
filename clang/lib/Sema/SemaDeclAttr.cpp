@@ -7826,8 +7826,6 @@ ProcessDeclAttribute(Sema &S, Scope *scope, Decl *D, const ParsedAttr &AL,
   case ParsedAttr::AT_NoShrinkwrapping:
     handleSimpleAttribute<NoShrinkwrappingAttr>(S, D, AL);
     break;
-
->>>>>>> 22e607133348 (propagate attribute)
   }
 }
 

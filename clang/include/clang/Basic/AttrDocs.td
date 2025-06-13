@@ -9420,5 +9420,3 @@ def NoShrinkwrappingDocs : Documentation {
   function from shrinkwrapping.
   }];
 }
-
->>>>>>> 9bbd15c221f8 (initial attempt)
