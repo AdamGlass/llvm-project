@@ -461,6 +461,10 @@ public:
   /// `MCAsmInfo::ExceptionsType == ExceptionHandling::None`.
   bool usesCFIWithoutEH() const;
 
+  /// Check if a function in this module uses floating point.  Used to
+  /// trigger inclusion of runtime libraries.
+  bool usesMSVCFloatingPoint(const Module &M);
+
   /// Print to the current output stream assembly representations of the
   /// constants in the constant pool MCP. This is used to print out constants
   /// which have been "spilled to memory" by the code generator.

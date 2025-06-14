@@ -78,6 +78,7 @@
 #include "llvm/IR/GlobalValue.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Instruction.h"
+#include "llvm/IR/InstIterator.h"
 #include "llvm/IR/Mangler.h"
 #include "llvm/IR/Metadata.h"
 #include "llvm/IR/Module.h"
@@ -1344,6 +1345,28 @@ bool AsmPrinter::needsSEHMoves() {
 
 bool AsmPrinter::usesCFIWithoutEH() const {
   return MAI->usesCFIWithoutEH() && ModuleCFISection != CFISection::None;
+}
+
+bool AsmPrinter::usesMSVCFloatingPoint(const Module &M) {
+  const Triple &TT = TM.getTargetTriple();
+
+  // Only needed for MSVC
+  if (!TT.isWindowsMSVCEnvironment())
+    return false;
+
+  for (const Function &F : M) {
+    for (const Instruction &I : instructions(F)) {
+      if (I.getType()->isFloatingPointTy())
+        return true;
+
+      for (const auto &Op : I.operands()) {
+        if (Op->getType()->isFloatingPointTy())
+          return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 void AsmPrinter::emitCFIInstruction(const MachineInstr &MI) {
