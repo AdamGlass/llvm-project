@@ -2507,7 +2507,10 @@ static bool checkStrictFP(const Function &Caller, const Function &Callee) {
          Caller.getAttributes().hasFnAttr(Attribute::StrictFP);
 }
 
-static bool checkSections(const Function &Caller, const Function &Callee) {
+static bool checkSectionsMSVC(const Function &Caller, const Function &Callee) {
+  if (!Caller.getParent()->getTargetTriple().isWindowsMSVCEnvironment())
+    return true;
+
   // Implement MSVC compatible cross-section inlining rules
   StringRef CallerSection = Caller.getSection();
   StringRef CalleeSection = Callee.getSection();
