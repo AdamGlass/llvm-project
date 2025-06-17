@@ -1,6 +1,6 @@
 // RUN: %clang_cc1 -fms-extensions -triple x86_64-windows-msvc %s -emit-llvm -o - | FileCheck %s --check-prefix=X64
 // RUN: %clang_cc1 -fms-extensions -triple thumbv7-windows-msvc %s -emit-llvm -o - | FileCheck %s --check-prefix=ARM
-// RUN: %clang_cc1 -fms-extensions -triple aarch64-windows-msvc %s -emit-llvm -o - | FileCheck %s --check-prefix=ARM
+// RUN: %clang_cc1 -fms-extensions -triple aarch64-windows-msvc %s -emit-llvm -o - | FileCheck %s --check-prefix=ARM64 -check-prefix=ARM
 
 volatile unsigned char sink = 0;
 void test32(long *base, long idx) {
@@ -30,6 +30,17 @@ void test_arm(long *base, long idx) {
   sink = _interlockedbittestandset_acq(base, idx);
   sink = _interlockedbittestandset_rel(base, idx);
   sink = _interlockedbittestandset_nf(base, idx);
+}
+#endif
+
+#if defined(_M_ARM64)
+void test_arm64(__int64 *base, __int64 idx) {
+  sink = _interlockedbittestandreset64_acq(base, idx);
+  sink = _interlockedbittestandreset64_rel(base, idx);
+  sink = _interlockedbittestandreset64_nf(base, idx);
+  sink = _interlockedbittestandset64_acq(base, idx);
+  sink = _interlockedbittestandset64_rel(base, idx);
+  sink = _interlockedbittestandset64_nf(base, idx);
 }
 #endif
 
@@ -127,3 +138,11 @@ void test_arm(long *base, long idx) {
 // ARM: atomicrmw or ptr %{{.*}}, i8 {{.*}} acquire, align 1
 // ARM: atomicrmw or ptr %{{.*}}, i8 {{.*}} release, align 1
 // ARM: atomicrmw or ptr %{{.*}}, i8 {{.*}} monotonic, align 1
+
+// ARM64-LABEL: define dso_local void @test_arm64(ptr noundef %base, i64 noundef %idx)
+// ARM64: atomicrmw and ptr %{{.*}}, i8 {{.*}} acquire, align 1
+// ARM64: atomicrmw and ptr %{{.*}}, i8 {{.*}} release, align 1
+// ARM64: atomicrmw and ptr %{{.*}}, i8 {{.*}} monotonic, align 1
+// ARM64: atomicrmw or ptr %{{.*}}, i8 {{.*}} acquire, align 1
+// ARM64: atomicrmw or ptr %{{.*}}, i8 {{.*}} release, align 1
+// ARM64: atomicrmw or ptr %{{.*}}, i8 {{.*}} monotonic, align 1
