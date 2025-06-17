@@ -1617,18 +1617,18 @@ BitTest BitTest::decodeBitTestBuiltin(unsigned BuiltinID) {
     return {Reset, Release, false};
   case Builtin::BI_interlockedbittestandreset_nf:
     return {Reset, NoFence, false};
-  case Builtin::BI_interlockedbittestandset64_acq:
-    return {Set, Acquire, false};
-  case Builtin::BI_interlockedbittestandset64_rel:
-    return {Set, Release, false};
-  case Builtin::BI_interlockedbittestandset64_nf:
-    return {Set, NoFence, false};
   case Builtin::BI_interlockedbittestandreset64_acq:
     return {Reset, Acquire, false};
   case Builtin::BI_interlockedbittestandreset64_rel:
     return {Reset, Release, false};
   case Builtin::BI_interlockedbittestandreset64_nf:
     return {Reset, NoFence, false};
+  case Builtin::BI_interlockedbittestandset64_acq:
+    return {Set, Acquire, false};
+  case Builtin::BI_interlockedbittestandset64_rel:
+    return {Set, Release, false};
+  case Builtin::BI_interlockedbittestandset64_nf:
+    return {Set, NoFence, false};
   }
   llvm_unreachable("expected only bittest intrinsics");
 }
