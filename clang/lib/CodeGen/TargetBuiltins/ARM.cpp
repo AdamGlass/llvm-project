@@ -6526,10 +6526,11 @@ Value *CodeGenFunction::EmitAArch64BuiltinExpr(unsigned BuiltinID,
     case clang::AArch64::BI_InterlockedAdd64_nf:
       Ordering = llvm::AtomicOrdering::Monotonic;
       break;
-    default: llvm_unreachable("missing builtin ID in switch!");
+    default:
+      llvm_unreachable("missing builtin ID in switch!");
     }
     AtomicRMWInst *RMWI =
-         Builder.CreateAtomicRMW(AtomicRMWInst::Add, DestAddr, Val, Ordering);
+        Builder.CreateAtomicRMW(AtomicRMWInst::Add, DestAddr, Val, Ordering);
     return Builder.CreateAdd(RMWI, Val);
   }
   }

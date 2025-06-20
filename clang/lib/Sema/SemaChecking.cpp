@@ -2371,8 +2371,7 @@ Sema::CheckBuiltinFunctionCall(FunctionDecl *FDecl, unsigned BuiltinID,
   case Builtin::BI_interlockedbittestandset64_acq:
   case Builtin::BI_interlockedbittestandset64_rel:
   case Builtin::BI_interlockedbittestandset64_nf:
-    if (CheckBuiltinTargetInSupported(
-            *this, TheCall, {llvm::Triple::aarch64}))
+    if (CheckBuiltinTargetInSupported(*this, TheCall, {llvm::Triple::aarch64}))
       return ExprError();
     break;
 
