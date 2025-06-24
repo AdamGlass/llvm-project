@@ -2539,8 +2539,10 @@ static bool checkSectionsMSVC(const Function &Caller, const Function &Callee) {
     if (CallerComparable != CalleeComparable)
       return false;
 
-    StringRef CallerComparableSection = CallerSection.substr(0, CallerComparable);
-    StringRef CalleeComparableSection = CalleeSection.substr(0, CallerComparable);
+    StringRef CallerComparableSection =
+        CallerSection.substr(0, CallerComparable);
+    StringRef CalleeComparableSection =
+        CalleeSection.substr(0, CallerComparable);
     return !CallerComparableSection.compare(CalleeComparableSection);
   } else if (isCalleePaged)
     return false;
