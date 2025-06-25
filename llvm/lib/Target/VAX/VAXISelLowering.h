@@ -60,7 +60,13 @@ namespace llvm {
                         const SmallVectorImpl<SDValue> &OutVals, const SDLoc &DL,
                         SelectionDAG &DAG) const override;
 
+    SDValue LowerCall(CallLoweringInfo &CLI,
+                      SmallVectorImpl<SDValue> &InVals) const override;
+
+
   };
+
+
 }
 
 #endif
