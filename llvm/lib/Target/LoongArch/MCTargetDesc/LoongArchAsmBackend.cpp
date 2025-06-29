@@ -31,8 +31,8 @@ using namespace llvm;
 LoongArchAsmBackend::LoongArchAsmBackend(const MCSubtargetInfo &STI,
                                          uint8_t OSABI, bool Is64Bit,
                                          const MCTargetOptions &Options)
-    : MCAsmBackend(llvm::endianness::little, /*LinkerRelaxation=*/true),
-      STI(STI), OSABI(OSABI), Is64Bit(Is64Bit), TargetOptions(Options) {}
+    : MCAsmBackend(llvm::endianness::little), STI(STI), OSABI(OSABI),
+      Is64Bit(Is64Bit), TargetOptions(Options) {}
 
 std::optional<MCFixupKind>
 LoongArchAsmBackend::getFixupKind(StringRef Name) const {
@@ -237,7 +237,7 @@ bool LoongArchAsmBackend::shouldInsertFixupForCodeAlign(MCAssembler &Asm,
   MCValue Value = MaxBytesToEmit >= InsertedNopBytes
                       ? MCValue::get(InsertedNopBytes)
                       : createExtendedValue();
-  Asm.getWriter().recordRelocation(Asm, &AF, Fixup, Value, FixedValue);
+  Asm.getWriter().recordRelocation(AF, Fixup, Value, FixedValue);
 
   return true;
 }
@@ -429,6 +429,26 @@ bool LoongArchAsmBackend::writeNopData(raw_ostream &OS, uint64_t Count,
   return true;
 }
 
+bool LoongArchAsmBackend::isPCRelFixupResolved(const MCSymbol *SymA,
+                                               const MCFragment &F) {
+  // If the section does not contain linker-relaxable fragments, PC-relative
+  // fixups can be resolved.
+  if (!F.getParent()->isLinkerRelaxable())
+    return true;
+
+  // Otherwise, check if the offset between the symbol and fragment is fully
+  // resolved, unaffected by linker-relaxable fragments (e.g. instructions or
+  // offset-affected MCAlignFragment). Complements the generic
+  // isSymbolRefDifferenceFullyResolvedImpl.
+  if (!PCRelTemp)
+    PCRelTemp = getContext().createTempSymbol();
+  PCRelTemp->setFragment(const_cast<MCFragment *>(&F));
+  MCValue Res;
+  MCExpr::evaluateSymbolicAdd(Asm, false, MCValue::get(SymA),
+                              MCValue::get(nullptr, PCRelTemp), Res);
+  return !Res.getSubSym();
+}
+
 bool LoongArchAsmBackend::addReloc(const MCFragment &F, const MCFixup &Fixup,
                                    const MCValue &Target, uint64_t &FixedValue,
                                    bool IsResolved) {
@@ -447,19 +467,24 @@ bool LoongArchAsmBackend::addReloc(const MCFragment &F, const MCFixup &Fixup,
     if (!force) {
       const MCSection &SecA = SA.getSection();
       const MCSection &SecB = SB.getSection();
+      const MCSection &SecCur = *F.getParent();
 
-      // We need record relocation if SecA != SecB. Usually SecB is same as the
-      // section of Fixup, which will be record the relocation as PCRel. If SecB
-      // is not same as the section of Fixup, it will report error. Just return
-      // false and then this work can be finished by handleFixup.
-      if (&SecA != &SecB)
+      // To handle the case of A - B which B is same section with the current,
+      // generate PCRel relocations is better than ADD/SUB relocation pair.
+      // We can resolve it as A - PC + PC - B. The A - PC will be resolved
+      // as a PCRel relocation, while PC - B will serve as the addend.
+      // If the linker relaxation is disabled, it can be done directly since
+      // PC - B is constant. Otherwise, we should evaluate whether PC - B
+      // is constant. If it can be resolved as PCRel, use Fallback which
+      // generates R_LARCH_{32,64}_PCREL relocation later.
+      if (&SecA != &SecB && &SecB == &SecCur &&
+          isPCRelFixupResolved(Target.getSubSym(), F))
         return Fallback();
 
-      // In SecA == SecB case. If the linker relaxation is enabled, we need
-      // record the ADD, SUB relocations. Otherwise the FixedValue has already
-      // been calc- ulated out in evaluateFixup, return true and avoid record
-      // relocations.
-      if (!STI.hasFeature(LoongArch::FeatureRelax))
+      // In SecA == SecB case. If the linker relaxation is disabled, the
+      // FixedValue has already been calculated out in evaluateFixup,
+      // return true and avoid record relocations.
+      if (&SecA == &SecB && !STI.hasFeature(LoongArch::FeatureRelax))
         return true;
     }
 
@@ -486,8 +511,8 @@ bool LoongArchAsmBackend::addReloc(const MCFragment &F, const MCFixup &Fixup,
     MCValue B = MCValue::get(Target.getSubSym());
     auto FA = MCFixup::create(Fixup.getOffset(), nullptr, std::get<0>(FK));
     auto FB = MCFixup::create(Fixup.getOffset(), nullptr, std::get<1>(FK));
-    Asm->getWriter().recordRelocation(*Asm, &F, FA, A, FixedValueA);
-    Asm->getWriter().recordRelocation(*Asm, &F, FB, B, FixedValueB);
+    Asm->getWriter().recordRelocation(F, FA, A, FixedValueA);
+    Asm->getWriter().recordRelocation(F, FB, B, FixedValueB);
     FixedValue = FixedValueA - FixedValueB;
     return false;
   }
@@ -497,7 +522,7 @@ bool LoongArchAsmBackend::addReloc(const MCFragment &F, const MCFixup &Fixup,
   // append a RELAX relocation.
   if (Fixup.isLinkerRelaxable()) {
     auto FA = MCFixup::create(Fixup.getOffset(), nullptr, ELF::R_LARCH_RELAX);
-    Asm->getWriter().recordRelocation(*Asm, &F, FA, MCValue::get(nullptr),
+    Asm->getWriter().recordRelocation(F, FA, MCValue::get(nullptr),
                                       FixedValueA);
   }
 
