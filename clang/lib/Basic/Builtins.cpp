@@ -140,6 +140,7 @@ static bool builtinIsSupported(const llvm::StringTable &Strings,
                                const Builtin::Info &BuiltinInfo,
                                const LangOptions &LangOpts) {
   auto AttributesStr = Strings[BuiltinInfo.Offsets.Attributes];
+  auto NameStr = Strings[BuiltinInfo.Offsets.Name];
 
   /* Builtins Unsupported */
   if (LangOpts.NoBuiltin && strchr(AttributesStr.data(), 'f') != nullptr)
@@ -155,6 +156,11 @@ static bool builtinIsSupported(const llvm::StringTable &Strings,
     return false;
   /* MSMode Unsupported */
   if (!LangOpts.MicrosoftExt && (BuiltinInfo.Langs & MS_LANG))
+    return false;
+  /* Outline Interlocked */
+  if (LangOpts.OutlineInterlocked &&
+      (!strncmp("_Interlocked", NameStr.data(), strlen("_Interlocked")) ||
+       !strncmp("_interlocked", NameStr.data(), strlen("_interlocked"))))
     return false;
   /* HLSLMode Unsupported */
   if (!LangOpts.HLSL && (BuiltinInfo.Langs & HLSL_LANG))
