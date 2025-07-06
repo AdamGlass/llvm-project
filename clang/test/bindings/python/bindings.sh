@@ -26,7 +26,7 @@
 # be explicitly skipped via appropriate LIT_ARGS, or adding a mechanism to
 # allow specifying a python interpreter compiled for the target that could
 # be executed using qemu-user.
-# XFAIL: !native
+# REQUIRES: native
 
 # RUN: env PYTHONPATH=%S/../../../bindings/python \
 # RUN:   CLANG_LIBRARY_PATH=%libdir \
