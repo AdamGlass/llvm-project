@@ -1,7 +1,9 @@
-; RUN: llc -mtriple=VAX-netbsd < %s | FileCheck %s
-define internal void @foo() {
+; RUN: llc --mtriple=vax-unknown-netbsd < %s | FileCheck %s
+define internal void @empty_void() {
 entry:
   ret void
 }
 
-; CHECK-LAEBEL: foo
+; CHECK-LABEL: empty_void:
+; CHECK: PROCENTRYMASK
+; CHECK: Ret
