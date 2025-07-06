@@ -7,3 +7,8 @@ entry:
 ; CHECK-LABEL: empty_void:
 ; CHECK: PROCENTRYMASK
 ; CHECK: Ret
+
+define internal i32 @empty_int() {
+entry:
+  ret i32 0
+}
