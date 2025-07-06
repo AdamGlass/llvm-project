@@ -62,7 +62,6 @@ static void printExpr(const MCExpr *Expr, const MCAsmInfo *MAI,
     SRE = dyn_cast<MCSymbolRefExpr>(Expr);
     assert(SRE && "Unexpected MCExpr type.");
   }
-  assert(SRE->getKind() == MCSymbolRefExpr::VK_None);
 
   SRE->getSymbol().print(OS, MAI);
 
