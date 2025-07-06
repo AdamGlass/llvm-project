@@ -304,6 +304,7 @@ SDValue VAXTargetLowering::LowerCall(CallLoweringInfo &CLI,
     Chain = DAG.getNode(ISD::TokenFactor, DL, MVT::Other, MemOpChains);
 
   }
+#endif
   report_fatal_error("not done");
 }
 
