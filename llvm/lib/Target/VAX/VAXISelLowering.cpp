@@ -62,7 +62,7 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
   MaxStoresPerMemmove = MaxStoresPerMemmoveOptSize
     = MaxStoresPerMemcpy = MaxStoresPerMemcpyOptSize = 2;
 
-  setMinFunctionAlignment(Align(4));
+  setMinFunctionAlignment(Align(1));
   setPrefFunctionAlignment(Align(4));
 
   // This target doesn't implement native atomics.

@@ -84,11 +84,20 @@ VAXTargetStreamer &VAXAsmPrinter::getTargetStreamer() {
 
 void VAXAsmPrinter::emitInstruction(const MachineInstr *MI) {
 
+  VAX_MC::verifyInstructionPredicates(MI->getOpcode(),
+                                      getSubtargetInfo().getFeatureBits());
+
+#if 1
   SmallString<128> Str;
   raw_svector_ostream O(Str);
 
   MI->print(O);
   OutStreamer->emitRawText(O.str());
+#else
+  MCInst OutInst;
+  if (!lowerToMCInst(MI, OutInst))
+    EmitToStreamer(*OutStreamer, OutInst);
+#endif
 }
 
 // Force static initialization.
