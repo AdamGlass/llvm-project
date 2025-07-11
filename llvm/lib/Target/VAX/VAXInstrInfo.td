@@ -16,8 +16,35 @@
 
 include "VAXInstrFormats.td"
 
+def imm6zext: IntImmLeaf<i32, [{ return Imm.getZExtValue() <= 63; }]>;
+//def sImm8: ImmLeaf<immSExti8>;
+
+def ADDRrd: ComplexPattern<i32, 2, "SelectAddr", [], []>;
+def gi_ADDRrd: GIComplexOperandMatcher<s32, "SelectAddrOrReg">,GIComplexPatternEquiv<ADDRrd>;
+//def REGsrc: ComplexPattern<(ops node:$reg), AddrOrReg, 1>;
+#ifdef NOTyET2
+
+def REGsrc: ComplexPattern<(ops GRPC:$reg), "AddrOrReg", 1>;
+def REGdst: ComplexPattern<(ops GRPCD:$reg), "AddrOrRegDst", 1>;
+def ADDRrd: ComplexPattern<(ops GRPC:$reg), "AddrOrReg", 1>;
+def ADDRimm32: ComplexPattern<(ops imm32:imm), "AddrOrReg", 1>;
+def ADDRri8: ComplexPattern<(ops GRPC:$reg, simm8:$val>, "AddrOrReg", 2>;
+def ADDRri16: ComplexPattern<(ops GRPC:$reg, simm16:$val>, "AddrOrReg", 2>;
+def ADDRri32: ComplexPattern<(ops GRPC:$reg, simm32:$val>, "AddrOrReg", 2>;
+
+#endif
+
+def VAXRet : SDNode<"VAXISD::RET", SDTNone,
+                      [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
+
+let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
+    def Ret : InstVAX<(outs), (ins), "ret", [(VAXRet)]>;
+}
+
+#ifdef DEAD
+
 def MEMrd : Operand<i32> {
-  let MIOperandInfo = (ops VRC, i32imm);
+  let MIOperandInfo = (ops GPRC, i32imm);
 }
 
 def ADDRrd : ComplexPattern<i32, 2, "selectADDRrd", [frameindex], []>;
@@ -31,7 +58,7 @@ def imm6 : PatLeaf<(imm), [{
 
 def VAXRet : SDNode<"VAXISD::RET", SDTNone,
                       [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
-def VAXRegMask : SDNode<"VAXISD::PROCENTRYMASK", SDTUnaryOp,
+def VAXRegMask : SDNode<"VAXISD::REGMASK", SDTUnaryOp,
                       [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
 
 //
@@ -65,10 +92,10 @@ class VAXSize<int Size> {
 multiclass MInstVAXR<string ONAME, SDNode NODE /*, bits<8> OPCODE */> {
   // define other variants
 
-  def ONAME#"l3" : InstVAX<(outs VRCO:$Rd),
-                          (ins VRC:$Rn, VRC:$Rm),
+  def ONAME#"l3" : InstVAX<(outs GPRCX:$Rd),
+                          (ins GPRC:$Rn, GPRC:$Rm),
                           !strconcat(ONAME, "l3", " $Rn, $Rm, $Rd"),
-                          [(set i32:$Rd, (NODE VRC:$Rn, VRC:$Rm))]>;
+                          [(set i32:$Rd, (NODE GPRC:$Rn, GPRC:$Rm))]>;
 }
 
 defm : MInstVAXR<"add", add>;
@@ -82,29 +109,29 @@ defm : MInstVAXR<"sub", xor>;
 // MCOM - Move Complement
 // MNEG - Move Negated
 
-//def MovL2 : InstVAX<(outs VRCO:$rd),
-//                    (ins VRC:$rs1),
+//def MovL2 : InstVAX<(outs GPRCX:$rd),
+//                    (ins GPRC:$rs1),
 //                    "movl3 $rs1, $rd",
 //                    [(set i32:$rd, i32:$rs1)]>;
 
-def LDC : InstVAX<(outs VRCO:$rd),
+def LDC : InstVAX<(outs GPRCX:$rd),
                   (ins i32imm:$i),
                   "movl2 $i, $rd",
                   [(set i32:$rd, imm6:$i)]>;
-def LDR : InstVAX<(outs VRCO:$Rd),
-                  (ins VRC:$Rs),
+def LDR : InstVAX<(outs GPRCX:$Rd),
+                  (ins GPRC:$Rs),
                   "movl2 ($Rs), $Rd",
-                  [(set VRCO:$Rd, (load VRC:$Rs))]>;
+                  [(set GPRCX:$Rd, (load GPRC:$Rs))]>;
 
-def LDRrd : InstVAX<(outs VRCO:$Rd),
+def LDRrd : InstVAX<(outs GPRCX:$Rd),
                     (ins MEMrd:$addr),
                     "movl2 $addr, $Rd",
-                    [(set VRCO:$Rd, (load ADDRrd:$addr))]>;
+                    [(set GPRCX:$Rd, (load ADDRrd:$addr))]>;
 
-//def LDRD : InstVAX<(outs VRCO:$Rd),
-//                  (ins VRC:$Rs, i32imm:$i),
+//def LDRD : InstVAX<(outs GPRCX:$Rd),
+//                  (ins GPRC:$Rs, i32imm:$i),
 //                  "movl2 something, $Rd",
-//                  [(set VRCO:$Rd, (load (add $Rs $i)))]>
+//                  [(set GPRCX:$Rd, (load (add $Rs $i)))]>
 
 // MOVZ - Move Zero-Extended
 
@@ -186,7 +213,8 @@ let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
 // FAUX Load/Store instructions
 //
 
-def PROCENTRYMASK : PseudoInstVAX<(outs),
-                       (ins i32imm:$i),
-                        ".error",
-                       []>;
+def RegMask : PseudoInstVAX<(outs),
+                            (ins i32imm:$i),
+                            ".error",
+                            []>;
+#endif

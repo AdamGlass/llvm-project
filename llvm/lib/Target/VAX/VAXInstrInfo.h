@@ -33,13 +33,13 @@ public:
   ///
   const VAXRegisterInfo &getRegisterInfo() const { return RI; }
 
-#if 0
   void loadRegFromStackSlot(MachineBasicBlock &MBB,
                             MachineBasicBlock::iterator MI, Register DestReg,
                             int FrameIndex, const TargetRegisterClass *RC,
                             const TargetRegisterInfo *TRI,
                             Register VReg) const override;
 
+#if 0
   /// isLoadFromStackSlot - If the specified machine instruction is a direct
   /// load from a stack slot, return the virtual or physical register number of
   /// the destination along with the FrameIndex of the loaded stack slot.  If

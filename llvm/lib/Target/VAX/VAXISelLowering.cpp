@@ -15,9 +15,6 @@
 #include "VAXMachineFunctionInfo.h"
 #include "VAXSubtarget.h"
 #include "VAXTargetMachine.h"
-#include "llvm/ADT/SmallSet.h"
-#include "llvm/ADT/SmallVector.h"
-#include "llvm/ADT/SmallVectorExtras.h"
 #include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
@@ -48,7 +45,7 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
     : TargetLowering(TM), Subtarget(&Subtarget) {
 
   // Set up the register classes.
-  addRegisterClass(MVT::i32, &VAX::VRCRegClass);
+  addRegisterClass(MVT::i32, &VAX::GPRCRegClass);
 
   // Compute derived properties from the register classes
   computeRegisterProperties(Subtarget.getRegisterInfo());
@@ -62,7 +59,7 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
   MaxStoresPerMemmove = MaxStoresPerMemmoveOptSize
     = MaxStoresPerMemcpy = MaxStoresPerMemcpyOptSize = 2;
 
-  setMinFunctionAlignment(Align(1));
+  setMinFunctionAlignment(Align(4));
   setPrefFunctionAlignment(Align(4));
 
   // This target doesn't implement native atomics.
@@ -202,110 +199,12 @@ VAXTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
                      ArrayRef<SDValue>(&RetOps[0], RetOps.size()));
 }
 
-SDValue VAXTargetLowering::LowerCall(CallLoweringInfo &CLI,
-              SmallVectorImpl<SDValue> &InVals) const {
-
-  SelectionDAG &DAG = CLI.DAG;
-  MachineFunction &MF = DAG.getMachineFunction();
-  SDLoc &DL = CLI.DL;
-  SmallVector<ISD::OutputArg, 32> &Outs = CLI.Outs;
-  SmallVector<SDValue, 32> &OutVals = CLI.OutVals;
-  SmallVector<ISD::InputArg, 32> &Ins = CLI.Ins;
-  SDValue Chain = CLI.Chain;
-  SDValue Callee = CLI.Callee;
-  bool &IsTailCall = CLI.IsTailCall;
-  CallingConv::ID &CallConv = CLI.CallConv;
-  bool IsVarArg = CLI.IsVarArg;
-
-  SmallVector<CCValAssign, 16> ArgLocs;
-  CCState CCInfo(CallConv, IsVarArg, MF, ArgLocs, *DAG.getContext());
-
-  CCInfo.AnalyzeCallOperands(CLI.Outs, CC_VAX);
-
-  unsigned NumBytes = CCInfo.getStackSize();
-
-  //  LLVM_DEBUG(dbgs() << "stack size: " << NumBytes << "\n");
-
-  SmallVector<std::pair<unsigned, SDValue>, 8> RegsToPass;
-  SmallSet<unsigned, 8> RegsUsed;
-  SmallVector<SDValue, 8> MemOpChains;
-  auto PtrVT = getPointerTy(DAG.getDataLayout());
-
-#if 0
-  //  // Assign locations to all of the outgoing aggregate by value arguments.
-  SmallVector<CCValAssign, 16> ByValArgLocs;
-  CCState CCByValInfo(CallConv, IsVarArg, MF, ByValArgLocs, *DAG.getContext());
-
-  // Reserve stack space for the allocations in CCInfo.
-  CCByValInfo.AllocateStack(CCInfo.getStackSize(), PtrAlign);
-
-  CCByValInfo.AnalyzeCallOperands(Outs, CC_PPC32_SVR4_ByVal);
-
-
-
-
-
-  // Walk the register/memloc assignments, inserting copies/loads.
-  unsigned ExtraArgLocs = 0;
-  for (unsigned i = 0, e = Outs.size(); i != e; ++i) {
-    CCValAssign &VA = ArgLocs[i - ExtraArgLocs];
-    SDValue Arg = OutVals[i];
-
-    switch (VA.getLocInfo()) {
-    default:
-      LLVM_DEBUG(dbgs() << "stack size: " << VA.getLocInfo() << "\n");
-
-      llvm_unreachable("unexpected location for arg");
-      break;
-    case CCValAssign::Full:
-      break;
-    case CCValAssign::SExt:
-      Arg = DAG.getNode(ISD::SIGN_EXTEND, DL, VA.getLocVT(), Arg);
-      break;
-    case CCValAssign::ZExt:
-      Arg = DAG.getNode(ISD::ZERO_EXTEND, DL, VA.getLocVT(), Arg);
-      break;
-
-    }
-
-    if (VA.isRegLoc()) {
-
-    } else {
-      assert(!VA.isMemLoc());
-
-      // is this the copies
-
-#if 0
-    if (Outs[i].Flags.isByVal()) {
-        SDValue SizeNode =
-            DAG.getConstant(Outs[i].Flags.getByValSize(), DL, MVT::i64);
-        SDValue Cpy = DAG.getMemcpy(
-            Chain, DL, DstAddr, Arg, SizeNode,
-            Outs[i].Flags.getNonZeroByValAlign(),
-            /*isVol = */ false, /*AlwaysInline = */ false,
-            /*CI=*/nullptr, std::nullopt, DstInfo, MachinePointerInfo());
-
-        MemOpChains.push_back(Cpy);
-      } else {
-        // Since we pass i1/i8/i16 as i1/i8/i16 on stack and Arg is already
-        // promoted to a legal register type i32, we should truncate Arg back to
-        // i1/i8/i16.
-        if (VA.getValVT() == MVT::i1 || VA.getValVT() == MVT::i8 ||
-            VA.getValVT() == MVT::i16)
-          Arg = DAG.getNode(ISD::TRUNCATE, DL, VA.getValVT(), Arg);
-
-        SDValue Store = DAG.getStore(Chain, DL, Arg, DstAddr, DstInfo);
-        MemOpChains.push_back(Store);
-      }
-    }
-#endif
-  }
-  if (!MemOpChains.empty())
-    Chain = DAG.getNode(ISD::TokenFactor, DL, MVT::Other, MemOpChains);
-
-  }
-#endif
-  report_fatal_error("not done");
+CCAssignFn *VAXTargetLowering::getCCAssignFn(CallingConv::ID CC, bool Return,
+                                              bool IsVarArg) const {
+  if (Return)
+    return RetCC_VAX;
+  else
+    return CC_VAX;
 }
 
 //===----------------------------------------------------------------------===//

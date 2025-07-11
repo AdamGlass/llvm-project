@@ -15,6 +15,7 @@
 #define LLVM_LIB_TARGET_VAX_VAXISELLOWERING_H
 
 #include "VAX.h"
+#include "llvm/CodeGen/CallingConvLower.h"
 #include "llvm/CodeGen/SelectionDAG.h"
 #include "llvm/CodeGen/TargetLowering.h"
 
@@ -49,6 +50,9 @@ namespace llvm {
     //  DAG node.
     const char *getTargetNodeName(unsigned Opcode) const override;
 
+    CCAssignFn *getCCAssignFn(CallingConv::ID CC, bool Return,
+                              bool IsVarArg) const;
+
   private:
     SDValue
     LowerFormalArguments(SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
@@ -60,13 +64,7 @@ namespace llvm {
                         const SmallVectorImpl<SDValue> &OutVals, const SDLoc &DL,
                         SelectionDAG &DAG) const override;
 
-    SDValue LowerCall(CallLoweringInfo &CLI,
-                      SmallVectorImpl<SDValue> &InVals) const override;
-
-
   };
-
-
 }
 
 #endif

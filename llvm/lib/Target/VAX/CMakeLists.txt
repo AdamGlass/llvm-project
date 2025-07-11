@@ -8,10 +8,16 @@ tablegen(LLVM VAXGenDisassemblerTables.inc -gen-disassembler)
 tablegen(LLVM VAXGenInstrInfo.inc -gen-instr-info)
 tablegen(LLVM VAXGenRegisterInfo.inc -gen-register-info)
 tablegen(LLVM VAXGenSubtargetInfo.inc -gen-subtarget)
+tablegen(LLVM VAXGenGlobalISel.inc -gen-global-isel)
+tablegen(LLVM VAXGenRegisterBank.inc -gen-register-bank)
 
 add_public_tablegen_target(VAXCommonTableGen)
 
 add_llvm_target(VAXCodeGen
+  GISel/VAXCallLowering.cpp
+  GISel/VAXInstructionSelector.cpp
+  GISel/VAXRegisterBankInfo.cpp
+  GISel/VAXLegalizerInfo.cpp
   VAXAsmPrinter.cpp
   VAXFrameLowering.cpp
   VAXInstrInfo.cpp
