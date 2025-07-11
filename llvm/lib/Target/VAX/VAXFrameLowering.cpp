@@ -71,7 +71,7 @@ void VAXFrameLowering::emitPrologue(MachineFunction &MF,
   }
 
   int i = 0;
-  for (MCPhysReg Reg : VAX::VRCORegClass) {
+  for (MCPhysReg Reg : VAX::GPRRegClass) {
     if (LiveRegs.contains(Reg)) {
       RegMask |= 1 << i;
     }

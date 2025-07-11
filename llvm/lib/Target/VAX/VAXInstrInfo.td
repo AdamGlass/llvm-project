@@ -17,7 +17,7 @@
 include "VAXInstrFormats.td"
 
 def MEMrd : Operand<i32> {
-  let MIOperandInfo = (ops VRC, i32imm);
+  let MIOperandInfo = (ops GPR, i32imm);
 }
 
 def ADDRrd : ComplexPattern<i32, 2, "selectADDRrd", [frameindex], []>;
@@ -65,10 +65,10 @@ class VAXSize<int Size> {
 multiclass MInstVAXR<string ONAME, SDNode NODE /*, bits<8> OPCODE */> {
   // define other variants
 
-  def ONAME#"l3" : InstVAX<(outs VRCO:$Rd),
-                          (ins VRC:$Rn, VRC:$Rm),
+  def ONAME#"l3" : InstVAX<(outs GPRnoPC:$Rd),
+                          (ins GPR:$Rn, GPR:$Rm),
                           !strconcat(ONAME, "l3", " $Rn, $Rm, $Rd"),
-                          [(set i32:$Rd, (NODE VRC:$Rn, VRC:$Rm))]>;
+                          [(set i32:$Rd, (NODE GPR:$Rn, GPR:$Rm))]>;
 }
 
 defm : MInstVAXR<"add", add>;
@@ -82,29 +82,29 @@ defm : MInstVAXR<"sub", xor>;
 // MCOM - Move Complement
 // MNEG - Move Negated
 
-//def MovL2 : InstVAX<(outs VRCO:$rd),
-//                    (ins VRC:$rs1),
+//def MovL2 : InstVAX<(outs GPRnoPC:$rd),
+//                    (ins GPR:$rs1),
 //                    "movl3 $rs1, $rd",
 //                    [(set i32:$rd, i32:$rs1)]>;
 
-def LDC : InstVAX<(outs VRCO:$rd),
+def LDC : InstVAX<(outs GPRnoPC:$rd),
                   (ins i32imm:$i),
                   "movl2 $i, $rd",
                   [(set i32:$rd, imm6:$i)]>;
-def LDR : InstVAX<(outs VRCO:$Rd),
-                  (ins VRC:$Rs),
+def LDR : InstVAX<(outs GPRnoPC:$Rd),
+                  (ins GPR:$Rs),
                   "movl2 ($Rs), $Rd",
-                  [(set VRCO:$Rd, (load VRC:$Rs))]>;
+                  [(set GPRnoPC:$Rd, (load GPR:$Rs))]>;
 
-def LDRrd : InstVAX<(outs VRCO:$Rd),
+def LDRrd : InstVAX<(outs GPRnoPC:$Rd),
                     (ins MEMrd:$addr),
                     "movl2 $addr, $Rd",
-                    [(set VRCO:$Rd, (load ADDRrd:$addr))]>;
+                    [(set GPRnoPC:$Rd, (load ADDRrd:$addr))]>;
 
-//def LDRD : InstVAX<(outs VRCO:$Rd),
-//                  (ins VRC:$Rs, i32imm:$i),
+//def LDRD : InstVAX<(outs GPRnoPC:$Rd),
+//                  (ins GPR:$Rs, i32imm:$i),
 //                  "movl2 something, $Rd",
-//                  [(set VRCO:$Rd, (load (add $Rs $i)))]>
+//                  [(set GPRnoPC:$Rd, (load (add $Rs $i)))]>
 
 // MOVZ - Move Zero-Extended
 
