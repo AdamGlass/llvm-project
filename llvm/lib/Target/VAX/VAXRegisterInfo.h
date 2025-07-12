@@ -14,6 +14,7 @@
 #define LLVM_LIB_TARGET_VAX_VAXREGISTERINFO_H
 
 #include "llvm/CodeGen/TargetRegisterInfo.h"
+#include <cstdint>
 
 #define GET_REGINFO_HEADER
 #include "VAXGenRegisterInfo.inc"

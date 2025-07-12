@@ -15,18 +15,19 @@ class VAXReg<bits<16> Enc, string n, list<string> altNames = [] > : Register<n, 
   let Namespace = "VAX";
 }
 
-def R0  : VAXReg< 0, "r0">,  DwarfRegNum<[0]>;
-def R1  : VAXReg< 1, "r1">,  DwarfRegNum<[1]>;
-def R2  : VAXReg< 2, "r2">,  DwarfRegNum<[2]>;
-def R3  : VAXReg< 3, "r3">,  DwarfRegNum<[3]>;
-def R4  : VAXReg< 4, "r4">,  DwarfRegNum<[4]>;
-def R5  : VAXReg< 5, "r5">,  DwarfRegNum<[5]>;
-def R6  : VAXReg< 6, "r6">,  DwarfRegNum<[6]>;
-def R7  : VAXReg< 7, "r7">,  DwarfRegNum<[7]>;
-def R8  : VAXReg< 8, "r8">,  DwarfRegNum<[8]>;
-def R9  : VAXReg< 9, "r9">,  DwarfRegNum<[9]>;
-def R10 : VAXReg<10, "r10">, DwarfRegNum<[10]>;
-def R11 : VAXReg<11, "r11">, DwarfRegNum<[11]>;
+let Namespace = "VAX" in {
+  def dsub_0 : SubRegIndex<32>;
+  def dsub_1 : SubRegIndex<32, 32>;
+  def qsub_0 : SubRegIndex<32>;
+  def qsub_1 : SubRegIndex<32, 32>;
+  def qsub_2 : SubRegIndex<32, 64>;
+  def qsub_3 : SubRegIndex<32, 96>;
+}
+
+foreach i = 0...11 in {
+  def R#i : VAXReg<i, "r"#i>, DwarfRegNum<[i]>;
+}
+
 def AP  : VAXReg<12, "ap">,  DwarfRegNum<[12]>;
 def FP  : VAXReg<13, "fp">,  DwarfRegNum<[13]>;
 def SP  : VAXReg<14, "sp">,  DwarfRegNum<[14]>;
@@ -34,9 +35,24 @@ def PC  : VAXReg<15, "pc">,  DwarfRegNum<[15]>;
 
 def PSL : VAXReg<16, "psl">, DwarfRegNum<[16]>;
 
-def GPR : RegisterClass<"VAX", [i32], 32,
-    (add R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, AP, FP, SP, PC)>;
+def PSC: RegisterClass<"VAX", [i32], 32, (add PSL)>;
 
+def GPR : RegisterClass<"VAX", [i32], 32,
+  (add R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, AP, FP, SP, PC)>;
+def GPRno : RegisterClass<"VAX", [i32], 32, (add (sub GPR, AP, FP, SP, PC))>;
 def GPRnoPC: RegisterClass<"VAX", [i32], 32, (add (sub GPR, PC))>;
 
-def PSC: RegisterClass<"VAX", [i32], 32, (add PSL)>;
+def FFPR : RegisterClass<"VAX", [f32], 32, (add (sub GPR, AP, FP, SP, PC))>;
+
+def DTuples : RegisterTuples<[dsub_0, dsub_1], [(shl GPRno, 0), (shl GPRno, 1)]>;
+def QTuples : RegisterTuples<[qsub_0, qsub_1, qsub_2, qsub_3], [(shl GPRno, 0), (shl GPRno, 1), (shl GPRno, 2), (shl GPRno, 3)]>;
+
+def QPR: RegisterClass<"VAX", [i64], 64, (add DTuples)>;
+def DFPR: RegisterClass<"VAX", [f64], 64, (add DTuples)>;
+def GFPR: RegisterClass<"VAX", [f64], 64, (add DTuples)>;
+
+
+def OPR: RegisterClass<"VAX", [i128], 128, (add QTuples)>;
+def HFPR: RegisterClass<"VAX", [f128], 128, (add QTuples)>;
+
+

@@ -10,6 +10,7 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include <cstdint>
 #include "VAX.h"
 #include "VAXTargetMachine.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
