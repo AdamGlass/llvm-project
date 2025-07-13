@@ -45,8 +45,8 @@ class VxSize<int num, string id, ValueType vt, RegisterClass src, RegisterClass 
   int OpOffset = opOffset;
 }
 
-def VxSize8: VxSize<8, "b", i8, GPR, GPRnoPC, 0>;
-def VxSize16: VxSize<16, "w", i16, GPR, GPRnoPC, 0x20>;
+def VxSize8: VxSize<8, "b", i8, GPRB, GPRB, 0>;
+def VxSize16: VxSize<16, "w", i16, GPRW, GPRW, 0x20>;
 def VxSize32: VxSize<32, "l", i32, GPR, GPRnoPC, 0x40>;
 
 //
@@ -78,7 +78,7 @@ multiclass MInstVAXI<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPC
                           (outs SIZE.DRC:$Rd),
                           (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
                           !strconcat(ONAME, SIZE.Id # "3", " $Rn, $Rm, $Rd"),
-                          [(set i32:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
+                          [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
 
 
 //    def ONAME # SIZE.Id # "3" :

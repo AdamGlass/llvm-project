@@ -10,12 +10,15 @@
 //  Declarations that describe the VAX register file
 //===----------------------------------------------------------------------===//
 
-class VAXReg<bits<16> Enc, string n, list<string> altNames = [] > : Register<n, altNames> {
+class VAXReg<bits<16> Enc, string n, list<string> altNames = [], list<Register> subregs = []> : Register<n, altNames> {
   let HWEncoding = Enc;
   let Namespace = "VAX";
+  let SubRegs = subregs;
 }
 
 let Namespace = "VAX" in {
+  def gsublo8 : SubRegIndex<8>;
+  def gsublo16 : SubRegIndex<16>;
   def dsub_0 : SubRegIndex<32>;
   def dsub_1 : SubRegIndex<32, 32>;
   def qsub_0 : SubRegIndex<32>;
@@ -25,7 +28,14 @@ let Namespace = "VAX" in {
 }
 
 foreach i = 0...11 in {
-  def R#i : VAXReg<i, "r"#i>, DwarfRegNum<[i]>;
+  def R#i#B : VAXReg<!add(i,20), "">;
+  def R#i#W : VAXReg<!add(i,20), "">;
+}
+foreach i = 0...11 in {
+  def R#i : VAXReg<i, "r"#i>, DwarfRegNum<[i]> {
+      let SubRegs = [!cast<VAXReg>("R"#i#"B"),!cast<VAXReg>("R"#i#"W")];
+      let SubRegIndices = [gsublo8, gsublo16];
+  } 
 }
 
 def AP  : VAXReg<12, "ap">,  DwarfRegNum<[12]>;
@@ -41,6 +51,11 @@ def GPR : RegisterClass<"VAX", [i32], 32,
   (add R0, R1, R2, R3, R4, R5, R6, R7, R8, R9, R10, R11, AP, FP, SP, PC)>;
 def GPRno : RegisterClass<"VAX", [i32], 32, (add (sub GPR, AP, FP, SP, PC))>;
 def GPRnoPC: RegisterClass<"VAX", [i32], 32, (add (sub GPR, PC))>;
+
+def GPRB : RegisterClass<"VAX", [i8], 8,
+  (add R0B, R1B, R2B, R3B, R4B, R5B, R6B, R7B, R8B, R9B, R10B, R11B)>;
+def GPRW : RegisterClass<"VAX", [i16], 16,
+  (add R0W, R1W, R2W, R3W, R4W, R5W, R6W, R7W, R8W, R9W, R10W, R11W)>;
 
 def FFPR : RegisterClass<"VAX", [f32], 32, (add (sub GPR, AP, FP, SP, PC))>;
 
