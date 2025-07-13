@@ -11,10 +11,10 @@
 //===----------------------------------------------------------------------===//
 
 #include "VAXSubtarget.h"
+#include "MCTargetDesc/VAXMCTargetDesc.h"
 #include "VAX.h"
 #include "VAXInstrInfo.h"
 #include "VAXRegisterInfo.h"
-#include "MCTargetDesc/VAXMCTargetDesc.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/SmallVector.h"
@@ -40,9 +40,9 @@ using namespace llvm;
 #define GET_SUBTARGETINFO_CTOR
 #include "VAXGenSubtargetInfo.inc"
 
-void VAXSubtarget::anchor() { }
+void VAXSubtarget::anchor() {}
 
 VAXSubtarget::VAXSubtarget(const Triple &TT, const std::string &CPU,
-                               const std::string &FS, const TargetMachine &TM)
+                           const std::string &FS, const TargetMachine &TM)
     : VAXGenSubtargetInfo(TT, CPU, /*TuneCPU*/ CPU, FS), FrameLowering(*this),
       TLInfo(TM, *this) {}

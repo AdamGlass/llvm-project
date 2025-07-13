@@ -14,7 +14,7 @@
 #include "VAXFrameLowering.h"
 #include "VAX.h"
 #include "VAXInstrInfo.h"
-//#include "VAXMachineFunctionInfo.h"
+// #include "VAXMachineFunctionInfo.h"
 #include "VAXSubtarget.h"
 #include "llvm/CodeGen/LivePhysRegs.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
@@ -49,7 +49,7 @@ bool VAXFrameLowering::hasFPImpl(const MachineFunction &MF) const {
 }
 
 void VAXFrameLowering::emitPrologue(MachineFunction &MF,
-                                      MachineBasicBlock &MBB) const {
+                                    MachineBasicBlock &MBB) const {
 
   assert(&MBB == &MF.front() && "Shrink-wrapping not yet implemented");
   MachineFrameInfo &MFI = MF.getFrameInfo();
@@ -78,13 +78,12 @@ void VAXFrameLowering::emitPrologue(MachineFunction &MF,
     i++;
   }
 
-  BuildMI(MBB, MBBI, DL, TII.get(VAX::PROCENTRYMASK)).
-          addImm(RegMask)
-          .setMIFlags(MachineInstr::FrameSetup);
+  BuildMI(MBB, MBBI, DL, TII.get(VAX::PROCENTRYMASK))
+      .addImm(RegMask)
+      .setMIFlags(MachineInstr::FrameSetup);
 
   LLVM_DEBUG(dbgs() << "stack size: " << StackSize << "\n");
 }
 
 void VAXFrameLowering::emitEpilogue(MachineFunction &MF,
-                                     MachineBasicBlock &MBB) const {
-}
+                                    MachineBasicBlock &MBB) const {}

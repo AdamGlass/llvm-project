@@ -23,13 +23,13 @@
 #include "llvm/CodeGen/MachineModuleInfo.h"
 #include "llvm/CodeGen/MachineRegisterInfo.h"
 #include "llvm/CodeGen/RegisterScavenging.h"
+#include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/IR/Function.h"
 #include "llvm/IR/Type.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/MathExtras.h"
 #include "llvm/Support/raw_ostream.h"
-#include "llvm/CodeGen/TargetFrameLowering.h"
 #include "llvm/Target/TargetMachine.h"
 #include "llvm/Target/TargetOptions.h"
 
@@ -40,20 +40,16 @@ using namespace llvm;
 #define GET_REGINFO_TARGET_DESC
 #include "VAXGenRegisterInfo.inc"
 
-VAXRegisterInfo::VAXRegisterInfo()
-  : VAXGenRegisterInfo(0) {
-}
+VAXRegisterInfo::VAXRegisterInfo() : VAXGenRegisterInfo(0) {}
 
 const MCPhysReg *
 VAXRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
   static const MCPhysReg CalleeSavedRegs[] = {
-    VAX::R2, VAX::R3, VAX::R4, VAX::R5, VAX::R6,
-    VAX::R7, VAX::R8, VAX::R9, VAX::R10, VAX::R11
-  };
+      VAX::R2, VAX::R3, VAX::R4, VAX::R5,  VAX::R6,
+      VAX::R7, VAX::R8, VAX::R9, VAX::R10, VAX::R11};
 
   return CalleeSavedRegs;
 }
-
 
 BitVector VAXRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   BitVector Reserved(getNumRegs());
@@ -70,10 +66,9 @@ Register VAXRegisterInfo::getFrameRegister(const MachineFunction &MF) const {
   return VAX::FP;
 }
 
-bool
-VAXRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
-                                       int SPAdj, unsigned FIOperandNum,
-                                       RegScavenger *RS) const {
+bool VAXRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
+                                          int SPAdj, unsigned FIOperandNum,
+                                          RegScavenger *RS) const {
   assert(SPAdj == 0 && "Unexpected");
   MachineInstr &MI = *II;
   MachineOperand &FrameOp = MI.getOperand(FIOperandNum);
@@ -109,10 +104,10 @@ VAXRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   Offset += MI.getOperand(FIOperandNum + 1).getImm();
   MI.getOperand(FIOperandNum + 1).ChangeToImmediate(0);
 
-  assert(Offset%4 == 0 && "Misaligned stack offset");
+  assert(Offset % 4 == 0 && "Misaligned stack offset");
   LLVM_DEBUG(errs() << "Offset             : " << Offset << "\n"
                     << "<--------->\n");
-  Offset/=4;
+  Offset /= 4;
 
   Register Reg = MI.getOperand(0).getReg();
   assert(VAX::GPRRegClass.contains(Reg) && "Unexpected register operand");

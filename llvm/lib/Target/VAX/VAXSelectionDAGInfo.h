@@ -17,8 +17,7 @@
 
 namespace llvm {
 
-class VAXSelectionDAGInfo : public SelectionDAGTargetInfo {
-};
+class VAXSelectionDAGInfo : public SelectionDAGTargetInfo {};
 
-}
+} // namespace llvm
 #endif

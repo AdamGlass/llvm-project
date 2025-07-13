@@ -24,6 +24,7 @@ namespace llvm {
 class VAXInstrInfo : public VAXGenInstrInfo {
   const VAXRegisterInfo RI;
   virtual void anchor();
+
 public:
   VAXInstrInfo();
 
@@ -89,12 +90,9 @@ public:
   MachineBasicBlock::iterator loadImmediate(MachineBasicBlock &MBB,
                                             MachineBasicBlock::iterator MI,
                                             unsigned Reg, uint64_t Value) const;
-  #endif
-
+#endif
 };
 
-
-
-}
+} // namespace llvm
 
 #endif

@@ -30,8 +30,7 @@ class VAXFunctionInfo : public MachineFunctionInfo {
 public:
   VAXFunctionInfo() = default;
 
-  explicit VAXFunctionInfo(const Function &F,
-                             const TargetSubtargetInfo *STI) {}
+  explicit VAXFunctionInfo(const Function &F, const TargetSubtargetInfo *STI) {}
 
   MachineFunctionInfo *
   clone(BumpPtrAllocator &Allocator, MachineFunction &DestMF,
@@ -39,7 +38,6 @@ public:
       const override;
 
   ~VAXFunctionInfo() override = default;
-
 };
 
 } // end namespace llvm

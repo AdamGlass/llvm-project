@@ -32,7 +32,7 @@
 #include "llvm/IR/GlobalAlias.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Intrinsics.h"
-//#include "llvm/IR/IntrinsicsVAX.h"
+// #include "llvm/IR/IntrinsicsVAX.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/KnownBits.h"
@@ -59,8 +59,8 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
   setBooleanContents(ZeroOrOneBooleanContent);
 
   MaxStoresPerMemset = MaxStoresPerMemsetOptSize = 4;
-  MaxStoresPerMemmove = MaxStoresPerMemmoveOptSize
-    = MaxStoresPerMemcpy = MaxStoresPerMemcpyOptSize = 2;
+  MaxStoresPerMemmove = MaxStoresPerMemmoveOptSize = MaxStoresPerMemcpy =
+      MaxStoresPerMemcpyOptSize = 2;
 
   setMinFunctionAlignment(Align(1));
   setPrefFunctionAlignment(Align(4));
@@ -69,13 +69,12 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
   setMaxAtomicSizeInBitsSupported(0);
 }
 
-const char *VAXTargetLowering::
-getTargetNodeName(unsigned Opcode) const
-{
-  switch ((VAXISD::NodeType)Opcode)
-  {
-    case VAXISD::FIRST_NUMBER      : break;
-    case VAXISD::RET               : return "VAXISD::RET";
+const char *VAXTargetLowering::getTargetNodeName(unsigned Opcode) const {
+  switch ((VAXISD::NodeType)Opcode) {
+  case VAXISD::FIRST_NUMBER:
+    break;
+  case VAXISD::RET:
+    return "VAXISD::RET";
   }
   return nullptr;
 }
@@ -88,9 +87,8 @@ getTargetNodeName(unsigned Opcode) const
 
 SDValue VAXTargetLowering::LowerFormalArguments(
     SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
-    const SmallVectorImpl<ISD::InputArg> &Ins,
-    const SDLoc &DL, SelectionDAG &DAG,
-    SmallVectorImpl<SDValue> &InVals) const {
+    const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &DL,
+    SelectionDAG &DAG, SmallVectorImpl<SDValue> &InVals) const {
   MachineFunction &MF = DAG.getMachineFunction();
   MachineFrameInfo &MFI = MF.getFrameInfo();
   MachineRegisterInfo &RegInfo = MF.getRegInfo();
@@ -122,30 +120,30 @@ SDValue VAXTargetLowering::LowerFormalArguments(
   //
 
   for (const CCValAssign &VA : ArgLocs) {
-      assert(VA.isMemLoc());
+    assert(VA.isMemLoc());
 
-      unsigned ObjSize = VA.getLocVT().getSizeInBits() / 8;
+    unsigned ObjSize = VA.getLocVT().getSizeInBits() / 8;
 
-      // Is there an issue if the argument is big eg. quad?
+    // Is there an issue if the argument is big eg. quad?
 
-      // Create the frame index object for this incoming parameter...
-      int FI = MFI.CreateFixedObject(ObjSize, VA.getLocMemOffset(), true);
-      // Create the SelectionDAG nodes corresponding to a load
-      // from this parameter
-      SDValue FIN = DAG.getFrameIndex(FI, MVT::i32);
-      InVals.push_back(DAG.getLoad(
-          VA.getLocVT(), DL, Chain, FIN,
-          MachinePointerInfo::getFixedStack(DAG.getMachineFunction(), FI)));
+    // Create the frame index object for this incoming parameter...
+    int FI = MFI.CreateFixedObject(ObjSize, VA.getLocMemOffset(), true);
+    // Create the SelectionDAG nodes corresponding to a load
+    // from this parameter
+    SDValue FIN = DAG.getFrameIndex(FI, MVT::i32);
+    InVals.push_back(DAG.getLoad(
+        VA.getLocVT(), DL, Chain, FIN,
+        MachinePointerInfo::getFixedStack(DAG.getMachineFunction(), FI)));
   }
   return Chain;
 }
 
 SDValue
 VAXTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
-                                 bool IsVarArg,
-                                 const SmallVectorImpl<ISD::OutputArg> &Outs,
-                                 const SmallVectorImpl<SDValue> &OutVals,
-                                 const SDLoc &DL, SelectionDAG &DAG) const {
+                               bool IsVarArg,
+                               const SmallVectorImpl<ISD::OutputArg> &Outs,
+                               const SmallVectorImpl<SDValue> &OutVals,
+                               const SDLoc &DL, SelectionDAG &DAG) const {
   // CCValAssign - represent the assignment of the return value to a location
   SmallVector<CCValAssign, 16> RVLocs;
   // CCState - Info about the registers and stack slot.
@@ -203,7 +201,7 @@ VAXTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
 }
 
 SDValue VAXTargetLowering::LowerCall(CallLoweringInfo &CLI,
-              SmallVectorImpl<SDValue> &InVals) const {
+                                     SmallVectorImpl<SDValue> &InVals) const {
 
   SelectionDAG &DAG = CLI.DAG;
   MachineFunction &MF = DAG.getMachineFunction();
@@ -311,4 +309,3 @@ SDValue VAXTargetLowering::LowerCall(CallLoweringInfo &CLI,
 //===----------------------------------------------------------------------===//
 //                           VAX Inline Assembly Support
 //===----------------------------------------------------------------------===//
-

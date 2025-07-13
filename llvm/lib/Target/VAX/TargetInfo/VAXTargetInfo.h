@@ -15,6 +15,6 @@ class Target;
 
 Target &getTheVAXTarget();
 
-}
+} // namespace llvm
 
 #endif // LLVM_LIB_TARGET_VAX_TARGETINFO_VAXTARGETINFO_H

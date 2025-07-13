@@ -56,11 +56,11 @@ static std::unique_ptr<TargetLoweringObjectFile> createTLOF() {
 /// Create an ILP32 architecture model
 ///
 VAXTargetMachine::VAXTargetMachine(const Target &T, const Triple &TT,
-                                       StringRef CPU, StringRef FS,
-                                       const TargetOptions &Options,
-                                       std::optional<Reloc::Model> RM,
-                                       std::optional<CodeModel::Model> CM,
-                                       CodeGenOptLevel OL, bool JIT)
+                                   StringRef CPU, StringRef FS,
+                                   const TargetOptions &Options,
+                                   std::optional<Reloc::Model> RM,
+                                   std::optional<CodeModel::Model> CM,
+                                   CodeGenOptLevel OL, bool JIT)
     : CodeGenTargetMachineImpl(
           T, "e-m:e-p:32:32-i1:8:32-i8:8:32-i16:16:32-i64:32-f64:32-a:0:32-n32",
           TT, CPU, FS, Options, getEffectiveRelocModel(RM),
@@ -78,7 +78,7 @@ namespace {
 class VAXPassConfig : public TargetPassConfig {
 public:
   VAXPassConfig(VAXTargetMachine &TM, PassManagerBase &PM)
-    : TargetPassConfig(TM, PM) {}
+      : TargetPassConfig(TM, PM) {}
 
   VAXTargetMachine &getVAXTargetMachine() const {
     return getTM<VAXTargetMachine>();
@@ -102,17 +102,14 @@ void VAXPassConfig::addIRPasses() {
   TargetPassConfig::addIRPasses();
 }
 
-bool VAXPassConfig::addPreISel() {
-  return false;
-}
+bool VAXPassConfig::addPreISel() { return false; }
 
 bool VAXPassConfig::addInstSelector() {
   addPass(createVAXISelDag(getVAXTargetMachine(), getOptLevel()));
   return false;
 }
 
-void VAXPassConfig::addPreEmitPass() {
-}
+void VAXPassConfig::addPreEmitPass() {}
 
 // Force static initialization.
 extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeVAXTarget() {

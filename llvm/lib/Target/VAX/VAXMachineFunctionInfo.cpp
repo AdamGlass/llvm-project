@@ -13,11 +13,11 @@
 
 using namespace llvm;
 
-void VAXFunctionInfo::anchor() { }
+void VAXFunctionInfo::anchor() {}
 
-MachineFunctionInfo *VAXFunctionInfo::clone(
-    BumpPtrAllocator &Allocator, MachineFunction &DestMF,
-    const DenseMap<MachineBasicBlock *, MachineBasicBlock *> &Src2DstMBB)
-    const {
+MachineFunctionInfo *
+VAXFunctionInfo::clone(BumpPtrAllocator &Allocator, MachineFunction &DestMF,
+                       const DenseMap<MachineBasicBlock *, MachineBasicBlock *>
+                           &Src2DstMBB) const {
   return DestMF.cloneInfo<VAXFunctionInfo>(*this);
 }

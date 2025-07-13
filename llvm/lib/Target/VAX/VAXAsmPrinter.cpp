@@ -15,7 +15,7 @@
 #include "TargetInfo/VAXTargetInfo.h"
 #include "VAX.h"
 #include "VAXInstrInfo.h"
-//#include "VAXMCInstLower.h"
+// #include "VAXMCInstLower.h"
 #include "VAXSubtarget.h"
 #include "VAXTargetMachine.h"
 #include "VAXTargetStreamer.h"
@@ -49,19 +49,19 @@ using namespace llvm;
 #define DEBUG_TYPE "asm-printer"
 
 namespace {
-  class VAXAsmPrinter : public AsmPrinter {
-    //VAXMCInstLower MCInstLowering;
-    VAXTargetStreamer &getTargetStreamer();
+class VAXAsmPrinter : public AsmPrinter {
+  // VAXMCInstLower MCInstLowering;
+  VAXTargetStreamer &getTargetStreamer();
 
-  public:
-    explicit VAXAsmPrinter(TargetMachine &TM,
-                             std::unique_ptr<MCStreamer> Streamer)
-        : AsmPrinter(TM, std::move(Streamer)) {}
-          //MCInstLowering(*this) {}
+public:
+  explicit VAXAsmPrinter(TargetMachine &TM,
+                         std::unique_ptr<MCStreamer> Streamer)
+      : AsmPrinter(TM, std::move(Streamer)) {}
+  // MCInstLowering(*this) {}
 
-    StringRef getPassName() const override { return "VAX Assembly Printer"; }
+  StringRef getPassName() const override { return "VAX Assembly Printer"; }
 
-    void emitInstruction(const MachineInstr *MI) override;
+  void emitInstruction(const MachineInstr *MI) override;
 
 #if 0
     bool PrintAsmOperand(const MachineInstr *MI, unsigned OpNo,
@@ -75,11 +75,11 @@ namespace {
     void emitFunctionBodyStart() override;
     void emitFunctionBodyEnd() override;
 #endif
-  };
+};
 } // end of anonymous namespace
 
 VAXTargetStreamer &VAXAsmPrinter::getTargetStreamer() {
-  return static_cast<VAXTargetStreamer&>(*OutStreamer->getTargetStreamer());
+  return static_cast<VAXTargetStreamer &>(*OutStreamer->getTargetStreamer());
 }
 
 void VAXAsmPrinter::emitInstruction(const MachineInstr *MI) {

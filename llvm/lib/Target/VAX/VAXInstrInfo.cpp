@@ -12,7 +12,7 @@
 
 #include "VAXInstrInfo.h"
 #include "VAX.h"
-//#include "VAXMachineFunctionInfo.h"
+// #include "VAXMachineFunctionInfo.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/CodeGen/MachineConstantPool.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
@@ -31,18 +31,13 @@ using namespace llvm;
 #include "VAXGenInstrInfo.inc"
 
 namespace llvm {
-namespace VAX {
-
-}
-}
+namespace VAX {}
+} // namespace llvm
 
 // Pin the vtable to this file.
 void VAXInstrInfo::anchor() {}
 
-VAXInstrInfo::VAXInstrInfo()
-    : VAXGenInstrInfo(0,0)
-{
-}
+VAXInstrInfo::VAXInstrInfo() : VAXGenInstrInfo(0, 0) {}
 
 #if 0
 void VAXInstrInfo::loadRegFromStackSlot(MachineBasicBlock &MBB,

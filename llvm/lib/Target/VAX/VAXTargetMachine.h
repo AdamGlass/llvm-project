@@ -29,14 +29,16 @@ class VAXTargetMachine : public CodeGenTargetMachineImpl {
 
 public:
   VAXTargetMachine(const Target &T, const Triple &TT, StringRef CPU,
-                     StringRef FS, const TargetOptions &Options,
-                     std::optional<Reloc::Model> RM,
-                     std::optional<CodeModel::Model> CM, CodeGenOptLevel OL,
-                     bool JIT);
+                   StringRef FS, const TargetOptions &Options,
+                   std::optional<Reloc::Model> RM,
+                   std::optional<CodeModel::Model> CM, CodeGenOptLevel OL,
+                   bool JIT);
   ~VAXTargetMachine() override;
 
   const VAXSubtarget *getSubtargetImpl() const { return &Subtarget; }
-  const VAXSubtarget *getSubtargetImpl(const Function &) const override { return &Subtarget; }
+  const VAXSubtarget *getSubtargetImpl(const Function &) const override {
+    return &Subtarget;
+  }
 
   // Pass Pipeline Configuration
   TargetPassConfig *createPassConfig(PassManagerBase &PM) override;
@@ -48,7 +50,6 @@ public:
   MachineFunctionInfo *
   createMachineFunctionInfo(BumpPtrAllocator &Allocator, const Function &F,
                             const TargetSubtargetInfo *STI) const override;
-
 };
 
 } // end namespace llvm

@@ -18,25 +18,23 @@
 #include "llvm/Target/TargetMachine.h"
 
 namespace llvm {
-  class VAXSubtarget;
+class VAXSubtarget;
 
-  class VAXFrameLowering: public TargetFrameLowering {
+class VAXFrameLowering : public TargetFrameLowering {
 
-  public:
-    VAXFrameLowering(const VAXSubtarget &STI);
+public:
+  VAXFrameLowering(const VAXSubtarget &STI);
 
-    /// emitProlog/emitEpilog - These methods insert prolog and epilog code into
-    /// the function.
-    void emitPrologue(MachineFunction &MF,
-                      MachineBasicBlock &MBB) const override;
-    void emitEpilogue(MachineFunction &MF,
-                      MachineBasicBlock &MBB) const override;
+  /// emitProlog/emitEpilog - These methods insert prolog and epilog code into
+  /// the function.
+  void emitPrologue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
+  void emitEpilogue(MachineFunction &MF, MachineBasicBlock &MBB) const override;
 
-  protected:
-    const VAXSubtarget &STI;
+protected:
+  const VAXSubtarget &STI;
 
-    bool hasFPImpl(const MachineFunction &MF) const override;
-  };
-}
+  bool hasFPImpl(const MachineFunction &MF) const override;
+};
+} // namespace llvm
 
 #endif

@@ -32,19 +32,19 @@ void VAXInstPrinter::printRegName(raw_ostream &OS, MCRegister Reg) {
 }
 
 void VAXInstPrinter::printInst(const MCInst *MI, uint64_t Address,
-                                 StringRef Annot, const MCSubtargetInfo &STI,
-                                 raw_ostream &O) {
+                               StringRef Annot, const MCSubtargetInfo &STI,
+                               raw_ostream &O) {
   printInstruction(MI, Address, O);
   printAnnotation(O, Annot);
 }
 
-void VAXInstPrinter::
-printInlineJT(const MCInst *MI, int opNum, raw_ostream &O) {
+void VAXInstPrinter::printInlineJT(const MCInst *MI, int opNum,
+                                   raw_ostream &O) {
   report_fatal_error("can't handle InlineJT");
 }
 
-void VAXInstPrinter::
-printInlineJT32(const MCInst *MI, int opNum, raw_ostream &O) {
+void VAXInstPrinter::printInlineJT32(const MCInst *MI, int opNum,
+                                     raw_ostream &O) {
   report_fatal_error("can't handle InlineJT32");
 }
 
@@ -72,8 +72,8 @@ static void printExpr(const MCExpr *Expr, const MCAsmInfo *MAI,
   }
 }
 
-void VAXInstPrinter::
-printOperand(const MCInst *MI, unsigned OpNo, raw_ostream &O) {
+void VAXInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
+                                  raw_ostream &O) {
   const MCOperand &Op = MI->getOperand(OpNo);
   if (Op.isReg()) {
     printRegName(O, Op.getReg());
