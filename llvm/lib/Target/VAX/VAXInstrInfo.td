@@ -66,7 +66,7 @@ def VxSize32: VxSize<32, "l", i32, GPR, GPRnoPC, 0x40>;
 multiclass MInstVAXI<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPCODE */> {
 
   // <base_op>       <op>B2
-  // <base_op>+0x    <op>B3
+  // <base_op>+0x1   <op>B3
   // <base_op>+0x20  <op>W2
   // <base_op>+0x21  <op>W3
   // <base_op>+0x40  <op>L2
@@ -79,15 +79,6 @@ multiclass MInstVAXI<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPC
                           (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
                           !strconcat(ONAME, SIZE.Id # "3", " $Rn, $Rm, $Rd"),
                           [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
-
-
-//    def ONAME # SIZE.Id # "3" :
-//        InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
-//               (outs SIZE.DRC:$Rd),
-//               (ins SIZE.SRC:$Rn, SIZE.DRC:$Rm),
-//               !strconcat(ONAME, SIZE.Id # "3", " $Rn, $Rm, $Rd"),
-//               [(set i32:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
-
   }
 }
 
@@ -182,16 +173,16 @@ let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
 //                    "movl3 $rs1, $rd",
 //                    [(set i32:$rd, i32:$rs1)]>;
 
-def LDC : InstVAX<99, (outs GPRnoPC:$rd),
+def LDC : InstVAX<200, (outs GPRnoPC:$rd),
                   (ins i32imm:$i),
                   "movl2 $i, $rd",
                   [(set i32:$rd, imm6:$i)]>;
-def LDR : InstVAX<100, (outs GPRnoPC:$Rd),
+def LDR : InstVAX<201, (outs GPRnoPC:$Rd),
                   (ins GPR:$Rs),
                   "movl2 ($Rs), $Rd",
                   [(set GPRnoPC:$Rd, (load GPR:$Rs))]>;
 
-def LDRrd : InstVAX<101, (outs GPRnoPC:$Rd),
+def LDRrd : InstVAX<202, (outs GPRnoPC:$Rd),
                     (ins MEMrd:$addr),
                     "movl2 $addr, $Rd",
                     [(set GPRnoPC:$Rd, (load ADDRrd:$addr))]>;
@@ -207,6 +198,11 @@ def LDRrd : InstVAX<101, (outs GPRnoPC:$Rd),
 
 // Floating Point
 
+def VxSizeF32: VxSize<32, "f", f32, FFPR, FFPR, 0>;
+def VxSizeD64: VxSize<64, "d", f64, DFPR, DFPR, 0x20>;
+def VxSizeG64: VxSize<64, "g", f64, GFPR, GFPR, 0xFD00>;
+def VxSizeH128: VxSize<128, "h", f128, HFPR, HFPR, 0xFD20>;
+
 multiclass MInstVAXF<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPCODE */> {
 
   // <base_op>              <op>F2
@@ -218,12 +214,15 @@ multiclass MInstVAXF<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPC
   // <base_op>+0x20 0xFD    <op>H2
   // <base_op>+0x21 0xFD    <op>H3
 
-  def ONAME#"f3" : InstVAX<base_op,
-                          (outs FFPR:$Rd),
-                          (ins FFPR:$Rn, FFPR:$Rm),
-                          !strconcat(ONAME, "f3", " $Rn, $Rm, $Rd"),
-                          [(set f32:$Rd, (NODE FFPR:$Rn, FFPR:$Rm))]>;
+  foreach SIZE = [VxSizeF32, VxSizeD64, VxSizeG64, VxSizeH128] in {
 
+    def ONAME# "r" # SIZE.Id # "3" : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
+                          (outs SIZE.DRC:$Rd),
+                          (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
+                          !strconcat(ONAME, SIZE.Id # "3", " $Rn, $Rm, $Rd"),
+                          [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
+
+  }
 }
 
 defm : MInstVAXF<"add", 0x40, fadd>;
