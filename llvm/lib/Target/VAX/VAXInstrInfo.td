@@ -53,7 +53,7 @@ def VxSize32: VxSize<32, "l", i32, GPR, GPRnoPC, 0x40>;
 // Source: VAX Architecture Reference Manual, '87
 //
 
-// 
+//
 // Integer Arithemtic and Logical Instructions
 //
 // CLR - Clear
@@ -79,6 +79,14 @@ multiclass MInstVAXI<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPC
                           (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
                           !strconcat(ONAME, SIZE.Id # "3", " $Rn, $Rm, $Rd"),
                           [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
+
+    let Constraints = "$Rd = $Rn" in {
+      def ONAME # "r" # SIZE.Id # "2" : InstVAX<!add(base_op, SIZE.OpOffset),
+                          (outs SIZE.DRC:$Rd),
+                          (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
+                          !strconcat(ONAME, SIZE.Id # "2", " $Rm, $Rd"),
+                          [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
+    }
   }
 }
 
@@ -222,6 +230,14 @@ multiclass MInstVAXF<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPC
                           !strconcat(ONAME, SIZE.Id # "3", " $Rn, $Rm, $Rd"),
                           [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
 
+    let Constraints = "$Rd = $Rn" in {
+      def ONAME# "r" # SIZE.Id # "2" : InstVAX<!add(base_op, SIZE.OpOffset),
+                          (outs SIZE.DRC:$Rd),
+                          (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
+                          !strconcat(ONAME, SIZE.Id # "2", " $Rm, $Rd"),
+                          [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
+    }
+
   }
 }
 
@@ -265,4 +281,3 @@ def PROCENTRYMASK : PseudoInstVAX<(outs),
                        (ins i32imm:$i),
                         ".error",
                        []>;
-
