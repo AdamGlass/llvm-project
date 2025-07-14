@@ -25,29 +25,65 @@ def VAXRegMask : SDNode<"VAXISD::PROCENTRYMASK", SDTUnaryOp,
 
 // Operands
 
-def MEMrd : Operand<i32> {
-  let MIOperandInfo = (ops GPR, i32imm);
-}
+// What is the Operand class for?
+// What does MIOperandInfo actually do?
+// ComplexPattern vs. Operand class
+// what is the difference between teh operand class and the memory oriented one?
+// Difference between operand<32>, and operand<iptr>
+// 
 
-def ADDRrd : ComplexPattern<i32, 2, "selectADDRrd", [frameindex], []>;
+
+// def MEMrd : Operand<i32> {
+//   let MIOperandInfo = (ops GPR, i32imm);
+// }
+
+// def ADDRrd : ComplexPattern<i32, 2, "selectADDRrd", [frameindex], []>;
 
 def imm6 : PatLeaf<(imm), [{
     uint32_t value = (uint32_t)N->getZExtValue();
     return value <= 63;
 }]>;
 
-class VxSize<int num, string id, ValueType vt, RegisterClass src, RegisterClass drc, int opOffset> {
+class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass src, RegisterClass drc, int opOffset> {
   int Num = num;
   string Id = id;
   ValueType VT = vt;
   RegisterClass SRC = src;
   RegisterClass DRC = drc;
   int OpOffset = opOffset;
+  string ModePrefix = mode_prefix;  
 }
 
-def VxSize8: VxSize<8, "b", i8, GPRB, GPRB, 0>;
-def VxSize16: VxSize<16, "w", i16, GPRW, GPRW, 0x20>;
-def VxSize32: VxSize<32, "l", i32, GPR, GPRnoPC, 0x40>;
+def VxSize8: VxSize<8, "b", "B", i8, GPRB, GPRB, 0>;
+def VxSize16: VxSize<16, "w", "W", i16, GPRW, GPRW, 0x20>;
+def VxSize32: VxSize<32, "l", "L", i32, GPR, GPRnoPC, 0x40>;
+
+defvar VxSizes = [VxSize8, VxSize16, VxSize32];
+
+multiclass VxOperands<VxSize vx> {
+  def vx.ModePrefix#_RegOp : Operand<vx.VT> {
+    let MIOperandInfo = (ops vx.SRC:$reg);
+    let OperandType = "OPERAND_REGISTER";
+  }
+
+  def vx.ModePrefix#_RegDstOp : Operand<vx.VT> {
+    let MIOperandInfo = (ops vx.DRC:$reg);
+    let OperandType = "OPERAND_REGISTER";
+  }
+
+  def vx.ModePrefix#_RegDefOp : Operand<vx.VT> {
+    let MIOperandInfo = (ops GPRnoPC:$reg);
+    let OperandType = "OPERAND_MEMORY";
+  }
+
+  def vx.ModePrefix#_Literal6Op : Operand<vx.VT> {
+    let OperandType = "OPERAND_LITERAL";
+  }
+}
+
+foreach Size = VxSizes in {
+  defm : VxOperands<Size>;
+}
 
 //
 // Source: VAX Architecture Reference Manual, '87
@@ -63,7 +99,7 @@ def VxSize32: VxSize<32, "l", i32, GPR, GPRnoPC, 0x40>;
 
 // CLR - Clear
 
-multiclass MInstVAXI<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPCODE */> {
+multiclass MInstVAXI<string ONAME, bits<16> base_op, SDNode NODE, VxSize SIZE /*, bits<8> OPCODE */> {
 
   // <base_op>       <op>B2
   // <base_op>+0x1   <op>B3
@@ -72,32 +108,35 @@ multiclass MInstVAXI<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPC
   // <base_op>+0x40  <op>L2
   // <base_op>+0x41  <op>L3
 
-  foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
-
+  foreach OPSRC = [SIZE.SRC] in {
+  foreach OPDST = [SIZE.DRC] in {
     def ONAME # "r" # SIZE.Id # "3" : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
                           (outs SIZE.DRC:$Rd),
-                          (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
+                          (ins OPSRC:$Rn, SIZE.SRC:$Rm),
                           !strconcat(ONAME, SIZE.Id # "3", " $Rn, $Rm, $Rd"),
                           [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
 
-    let Constraints = "$Rd = $Rn" in {
-      def ONAME # "r" # SIZE.Id # "2" : InstVAX<!add(base_op, SIZE.OpOffset),
-                          (outs SIZE.DRC:$Rd),
-                          (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
-                          !strconcat(ONAME, SIZE.Id # "2", " $Rm, $Rd"),
-                          [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
-    }
+//    let Constraints = "$Rd = $Rn" in {
+//      def ONAME # "r" # SIZE.Id # "2" : InstVAX<!add(base_op, SIZE.OpOffset),
+//                          (outs SIZE.DRC:$Rd),
+//                          (ins OPSRC:$Rn, SIZE.SRC:$Rm),
+//                          !strconcat(ONAME, SIZE.Id # "2", " $Rm, $Rd"),
+//                          [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
+//    }
+  }
   }
 }
 
-defm : MInstVAXI<"add", 0x80, add>;
-//defm : MInstVAXI<"bic", 0x8A, bic>;
-//defm : MInstVAXI<"bis", 0x88, bis>;
-defm : MInstVAXI<"div", 0x86, sdiv>;
-defm : MInstVAXI<"mul", 0x84, mul>;
-defm : MInstVAXI<"sub", 0x82, sub>;
-defm : MInstVAXI<"xor", 0x8C, xor>;
-
+foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
+  defm : MInstVAXI<"add", 0x80, add, SIZE>;
+//defm : MInstVAXI<"bic", 0x8A, bic, SIZE>;
+//defm : MInstVAXI<"bis", 0x88, bis, SIZE>;
+  defm : MInstVAXI<"div", 0x86, sdiv, SIZE>;
+  defm : MInstVAXI<"mul", 0x84, mul, SIZE>;
+  defm : MInstVAXI<"sub", 0x82, sub, SIZE>;
+  defm : MInstVAXI<"xor", 0x8C, xor, SIZE>;
+}
+  
 // Other instructions
 // ADAWI - Add Aligned Word Interlocked
 // ADDWC - Add with Carry
@@ -181,19 +220,19 @@ let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
 //                    "movl3 $rs1, $rd",
 //                    [(set i32:$rd, i32:$rs1)]>;
 
-def LDC : InstVAX<200, (outs GPRnoPC:$rd),
-                  (ins i32imm:$i),
-                  "movl2 $i, $rd",
-                  [(set i32:$rd, imm6:$i)]>;
-def LDR : InstVAX<201, (outs GPRnoPC:$Rd),
-                  (ins GPR:$Rs),
-                  "movl2 ($Rs), $Rd",
-                  [(set GPRnoPC:$Rd, (load GPR:$Rs))]>;
+// def LDC : InstVAX<200, (outs GPRnoPC:$rd),
+//                   (ins i32imm:$i),
+//                   "movl2 $i, $rd",
+//                   [(set i32:$rd, imm6:$i)]>;
+// def LDR : InstVAX<201, (outs GPRnoPC:$Rd),
+//                   (ins GPR:$Rs),
+//                   "movl2 ($Rs), $Rd",
+//                   [(set GPRnoPC:$Rd, (load GPR:$Rs))]>;
 
-def LDRrd : InstVAX<202, (outs GPRnoPC:$Rd),
-                    (ins MEMrd:$addr),
-                    "movl2 $addr, $Rd",
-                    [(set GPRnoPC:$Rd, (load ADDRrd:$addr))]>;
+// def LDRrd : InstVAX<202, (outs GPRnoPC:$Rd),
+//                     (ins MEMrd:$addr),
+//                     "movl2 $addr, $Rd",
+//                     [(set GPRnoPC:$Rd, (load ADDRrd:$addr))]>;
 
 //def LDRD : InstVAX<(outs GPRnoPC:$Rd),
 //                  (ins GPR:$Rs, i32imm:$i),
@@ -206,10 +245,10 @@ def LDRrd : InstVAX<202, (outs GPRnoPC:$Rd),
 
 // Floating Point
 
-def VxSizeF32: VxSize<32, "f", f32, FFPR, FFPR, 0>;
-def VxSizeD64: VxSize<64, "d", f64, DFPR, DFPR, 0x20>;
-def VxSizeG64: VxSize<64, "g", f64, GFPR, GFPR, 0xFD00>;
-def VxSizeH128: VxSize<128, "h", f128, HFPR, HFPR, 0xFD20>;
+def VxSizeF32: VxSize<32, "f", "Float", f32, FFPR, FFPR, 0>;
+def VxSizeD64: VxSize<64, "d", "DFloat",f64, DFPR, DFPR, 0x20>;
+def VxSizeG64: VxSize<64, "g", "GFloat", f64, GFPR, GFPR, 0xFD00>;
+def VxSizeH128: VxSize<128, "h","HFloat", f128, HFPR, HFPR, 0xFD20>;
 
 multiclass MInstVAXF<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPCODE */> {
 
