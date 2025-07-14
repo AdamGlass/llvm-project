@@ -30,7 +30,7 @@ def VAXRegMask : SDNode<"VAXISD::PROCENTRYMASK", SDTUnaryOp,
 // ComplexPattern vs. Operand class
 // what is the difference between teh operand class and the memory oriented one?
 // Difference between operand<32>, and operand<iptr>
-// 
+//
 
 
 // def MEMrd : Operand<i32> {
@@ -44,46 +44,63 @@ def imm6 : PatLeaf<(imm), [{
     return value <= 63;
 }]>;
 
-class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass src, RegisterClass drc, int opOffset> {
+multiclass VxOperands<ValueType VT, RegisterClass SRC, RegisterClass DRC, RegisterClass MRC> {
+
+  def _RegOp : Operand<VT> {
+    let MIOperandInfo = (ops SRC:$reg);
+    let OperandType = "OPERAND_REGISTER";
+  }
+
+  def _RegDstOp : Operand<VT> {
+    let MIOperandInfo = (ops DRC:$reg);
+    let OperandType = "OPERAND_REGISTER";
+  }
+
+  def _RegDefOp : Operand<VT> {
+    let MIOperandInfo = (ops MRC:$reg);
+    let OperandType = "OPERAND_MEMORY";
+  }
+
+  def _Literal6Op : Operand<VT> {
+    let OperandType = "OPERAND_LITERAL";
+  }
+}
+
+defm BOps: VxOperands<i8, GPRB, GPRB, GPRnoPC>;
+defm WOps: VxOperands<i16, GPRW, GPRW, GPRnoPC>;
+defm LOps: VxOperands<i32, GPRnoPC, GPRnoPC, GPRnoPC>;
+defm QOps: VxOperands<i64, QPR, QPR, GPRnoPC>;
+defm OOps: VxOperands<i128, OPR, OPR, GPRnoPC>;
+
+class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass src, RegisterClass drc, int opOffset, list<Operand> srcops = [], list<Operand> dstops = []> {
   int Num = num;
   string Id = id;
   ValueType VT = vt;
   RegisterClass SRC = src;
   RegisterClass DRC = drc;
   int OpOffset = opOffset;
-  string ModePrefix = mode_prefix;  
+  string ModePrefix = mode_prefix;
+  list<Operand> SrcOperands = srcops;
+  list<Operand> DstOperands = dstops;
 }
 
-def VxSize8: VxSize<8, "b", "B", i8, GPRB, GPRB, 0>;
-def VxSize16: VxSize<16, "w", "W", i16, GPRW, GPRW, 0x20>;
-def VxSize32: VxSize<32, "l", "L", i32, GPR, GPRnoPC, 0x40>;
+def VxSize8: VxSize<8, "b", "B", i8, GPRB, GPRB, 0,
+    [BOps_RegOp, BOps_RegDefOp, BOps_Literal6Op],
+    [BOps_RegDstOp, BOps_RegDefOp]>;
+def VxSize16: VxSize<16, "w", "W", i16, GPRW, GPRW, 0x20,
+    [WOps_RegOp, WOps_RegDefOp, WOps_Literal6Op],
+    [WOps_RegDstOp, WOps_RegDefOp]>;
+def VxSize32: VxSize<32, "l", "L", i32, GPR, GPRnoPC, 0x40,
+    [LOps_RegOp, LOps_RegDefOp, LOps_Literal6Op],
+    [LOps_RegDstOp, LOps_RegDefOp]>;
+def VxSize64: VxSize<64, "q", "Q", i64, QPR, QPR, 0x40,
+    [QOps_RegOp, QOps_RegDefOp, QOps_Literal6Op],
+    [QOps_RegDstOp, QOps_RegDefOp]>;
+def VxSize128: VxSize<128, "o", "O", i128, OPR, OPR, 0,
+    [OOps_RegOp, OOps_RegDefOp, OOps_Literal6Op],
+    [OOps_RegDstOp, OOps_RegDefOp]>;
 
-defvar VxSizes = [VxSize8, VxSize16, VxSize32];
-
-multiclass VxOperands<VxSize vx> {
-  def vx.ModePrefix#_RegOp : Operand<vx.VT> {
-    let MIOperandInfo = (ops vx.SRC:$reg);
-    let OperandType = "OPERAND_REGISTER";
-  }
-
-  def vx.ModePrefix#_RegDstOp : Operand<vx.VT> {
-    let MIOperandInfo = (ops vx.DRC:$reg);
-    let OperandType = "OPERAND_REGISTER";
-  }
-
-  def vx.ModePrefix#_RegDefOp : Operand<vx.VT> {
-    let MIOperandInfo = (ops GPRnoPC:$reg);
-    let OperandType = "OPERAND_MEMORY";
-  }
-
-  def vx.ModePrefix#_Literal6Op : Operand<vx.VT> {
-    let OperandType = "OPERAND_LITERAL";
-  }
-}
-
-foreach Size = VxSizes in {
-  defm : VxOperands<Size>;
-}
+defvar VxGenSizes = [VxSize8, VxSize16, VxSize32];
 
 //
 // Source: VAX Architecture Reference Manual, '87
@@ -136,7 +153,7 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   defm : MInstVAXI<"sub", 0x82, sub, SIZE>;
   defm : MInstVAXI<"xor", 0x8C, xor, SIZE>;
 }
-  
+
 // Other instructions
 // ADAWI - Add Aligned Word Interlocked
 // ADDWC - Add with Carry
