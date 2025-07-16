@@ -45,34 +45,24 @@ def imm6 : PatLeaf<(imm), [{
 }]>;
 
 multiclass VxOperands<ValueType VT, RegisterClass SRC, RegisterClass DRC, RegisterClass MRC> {
-
-  def _RegOp : Operand<VT> {
-    let MIOperandInfo = (ops SRC:$reg);
-    let OperandType = "OPERAND_REGISTER";
+  def Src: Operand<VT> {
+    let MIOperandInfo = (ops SRC:$reg, MRC:$mreg);
+  }
+  def Dst: Operand<VT> {
+    let MIOperandInfo = (ops DRC:$reg,  MRC:$mreg);
   }
 
-  def _RegDstOp : Operand<VT> {
-    let MIOperandInfo = (ops DRC:$reg);
-    let OperandType = "OPERAND_REGISTER";
-  }
-
-  def _RegDefOp : Operand<VT> {
-    let MIOperandInfo = (ops MRC:$reg);
-    let OperandType = "OPERAND_MEMORY";
-  }
-
-  def _Literal6Op : Operand<VT> {
-    let OperandType = "OPERAND_LITERAL";
-  }
+  def SrcPat: ComplexPattern<VT, 2, "select" # NAME # "Src", []>;
+  def DstPat: ComplexPattern<VT, 2, "select" # NAME # "Dst", []>;
 }
 
-defm BOps: VxOperands<i8, GPRB, GPRB, GPRnoPC>;
-defm WOps: VxOperands<i16, GPRW, GPRW, GPRnoPC>;
-defm LOps: VxOperands<i32, GPRnoPC, GPRnoPC, GPRnoPC>;
-defm QOps: VxOperands<i64, QPR, QPR, GPRnoPC>;
-defm OOps: VxOperands<i128, OPR, OPR, GPRnoPC>;
+defm BVop: VxOperands<i8, GPRB, GPRB, GPRnoPC>;
+defm WVop: VxOperands<i16, GPRW, GPRW, GPRnoPC>;
+defm LVop: VxOperands<i32, GPRnoPC, GPRnoPC, GPRnoPC>;
+defm QVop: VxOperands<i64, QPR, QPR, GPRnoPC>;
+defm OVop: VxOperands<i128, OPR, OPR, GPRnoPC>;
 
-class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass src, RegisterClass drc, int opOffset, list<Operand> srcops = [], list<Operand> dstops = []> {
+class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass src, RegisterClass drc, int opOffset, Operand srcop, ComplexPattern srcpat, Operand dstop, ComplexPattern dstpat>{
   int Num = num;
   string Id = id;
   ValueType VT = vt;
@@ -80,25 +70,17 @@ class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass
   RegisterClass DRC = drc;
   int OpOffset = opOffset;
   string ModePrefix = mode_prefix;
-  list<Operand> SrcOperands = srcops;
-  list<Operand> DstOperands = dstops;
+  Operand SrcOp = srcop;
+  Operand DstOp = dstop;
+  ComplexPattern SrcOpPat = srcpat;
+  ComplexPattern DstOpPat = dstpat;
 }
 
-def VxSize8: VxSize<8, "b", "B", i8, GPRB, GPRB, 0,
-    [BOps_RegOp, BOps_RegDefOp, BOps_Literal6Op],
-    [BOps_RegDstOp, BOps_RegDefOp]>;
-def VxSize16: VxSize<16, "w", "W", i16, GPRW, GPRW, 0x20,
-    [WOps_RegOp, WOps_RegDefOp, WOps_Literal6Op],
-    [WOps_RegDstOp, WOps_RegDefOp]>;
-def VxSize32: VxSize<32, "l", "L", i32, GPR, GPRnoPC, 0x40,
-    [LOps_RegOp, LOps_RegDefOp, LOps_Literal6Op],
-    [LOps_RegDstOp, LOps_RegDefOp]>;
-def VxSize64: VxSize<64, "q", "Q", i64, QPR, QPR, 0x40,
-    [QOps_RegOp, QOps_RegDefOp, QOps_Literal6Op],
-    [QOps_RegDstOp, QOps_RegDefOp]>;
-def VxSize128: VxSize<128, "o", "O", i128, OPR, OPR, 0,
-    [OOps_RegOp, OOps_RegDefOp, OOps_Literal6Op],
-    [OOps_RegDstOp, OOps_RegDefOp]>;
+def VxSize8: VxSize<8, "b", "B", i8, GPRB, GPRB, 0, BVopSrc, BVopSrcPat, BVopDst, BVopDstPat>;
+def VxSize16: VxSize<16, "w", "W", i16, GPRW, GPRW, 0x20, WVopSrc, WVopSrcPat, WVopDst, WVopDstPat>;
+def VxSize32: VxSize<32, "l", "L", i32, GPR, GPRnoPC, 0x40, LVopSrc, LVopSrcPat, LVopDst, LVopDstPat>;
+def VxSize64: VxSize<64, "q", "Q", i64, QPR, QPR, 0x40, QVopSrc, QVopSrcPat, QVopDst, QVopDstPat>;
+def VxSize128: VxSize<128, "o", "O", i128, OPR, OPR, 0, OVopSrc, OVopSrcPat, OVopDst, OVopSrcPat>;
 
 defvar VxGenSizes = [VxSize8, VxSize16, VxSize32];
 
@@ -143,15 +125,25 @@ multiclass MInstVAXI<string ONAME, bits<16> base_op, SDNode NODE, VxSize SIZE /*
   }
   }
 }
+multiclass MInstVAXINew<bits<16> base_op, SDNode NODE, VxSize SIZE> {
+
+    def SIZE.Id # "3" : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
+                          (outs SIZE.DstOp:$dst),
+                          (ins SIZE.SrcOp:$src1, SIZE.SrcOp:$src2),
+                          !strconcat(NAME, SIZE.Id # "3", " $src1, $src2, $dst"),
+                          [(set SIZE.VT:$dst, (NODE SIZE.SrcOpPat:$src1, SIZE.SrcOpPat:$src2))]>;
+
+    // let need to define 2 variant but have to get constraints right
+}
 
 foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
-  defm : MInstVAXI<"add", 0x80, add, SIZE>;
-//defm : MInstVAXI<"bic", 0x8A, bic, SIZE>;
-//defm : MInstVAXI<"bis", 0x88, bis, SIZE>;
-  defm : MInstVAXI<"div", 0x86, sdiv, SIZE>;
-  defm : MInstVAXI<"mul", 0x84, mul, SIZE>;
-  defm : MInstVAXI<"sub", 0x82, sub, SIZE>;
-  defm : MInstVAXI<"xor", 0x8C, xor, SIZE>;
+  defm add: MInstVAXINew<0x80, add, SIZE>;
+//  defm bic: MInstVAXI<0x8A, bic, SIZE>;
+//  defm bis: MInstVAXI<0x88, bis, SIZE>;
+  defm div: MInstVAXINew<0x86, sdiv, SIZE>;
+  defm mul: MInstVAXINew<0x84, mul, SIZE>;
+  defm sub: MInstVAXINew<0x82, sub, SIZE>;
+  defm xor: MInstVAXINew<0x8C, xor, SIZE>;
 }
 
 // Other instructions
@@ -262,46 +254,52 @@ let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
 
 // Floating Point
 
-def VxSizeF32: VxSize<32, "f", "Float", f32, FFPR, FFPR, 0>;
-def VxSizeD64: VxSize<64, "d", "DFloat",f64, DFPR, DFPR, 0x20>;
-def VxSizeG64: VxSize<64, "g", "GFloat", f64, GFPR, GFPR, 0xFD00>;
-def VxSizeH128: VxSize<128, "h","HFloat", f128, HFPR, HFPR, 0xFD20>;
+defm FVop: VxOperands<f32, FFPR, FFPR, GPRnoPC>;
+defm DVop: VxOperands<f64, GPRW, GPRW, GPRnoPC>;
+defm GVop: VxOperands<f64, GPRnoPC, GPRnoPC, GPRnoPC>;
+defm HVop: VxOperands<f128, QPR, QPR, GPRnoPC>;
 
-multiclass MInstVAXF<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPCODE */> {
+def VxSizeF32: VxSize<32, "f", "F", f32, FFPR, FFPR, 0, FVopSrc, FVopSrcPat, FVopDst, FVopDstPat>;
+def VxSizeD64: VxSize<64, "d", "D",f64, DFPR, DFPR, 0x20, DVopSrc, DVopSrcPat, DVopDst, DVopDstPat>;
+def VxSizeG64: VxSize<64, "g", "G", f64, GFPR, GFPR, 0xFD00, GVopSrc, GVopSrcPat, GVopDst, GVopDstPat>;
+def VxSizeH128: VxSize<128, "h","H", f128, HFPR, HFPR, 0xFD20, HVopSrc, HVopSrcPat, HVopDst, HVopDstPat>;
 
-  // <base_op>              <op>F2
-  // <base_op>+0x1          <op>F3
-  // <base_op>+0x20         <op>D2
-  // <base_op>+0x21         <op>D3
-  // <base_op>      0xFD    <op>G2
-  // <base_op>+0x1  0xFD    <op>G3
-  // <base_op>+0x20 0xFD    <op>H2
-  // <base_op>+0x21 0xFD    <op>H3
+// multiclass MInstVAXF<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPCODE */> {
 
-  foreach SIZE = [VxSizeF32, VxSizeD64, VxSizeG64, VxSizeH128] in {
+//   // <base_op>              <op>F2
+//   // <base_op>+0x1          <op>F3
+//   // <base_op>+0x20         <op>D2
+//   // <base_op>+0x21         <op>D3
+//   // <base_op>      0xFD    <op>G2
+//   // <base_op>+0x1  0xFD    <op>G3
+//   // <base_op>+0x20 0xFD    <op>H2
+//   // <base_op>+0x21 0xFD    <op>H3
 
-    def ONAME# "r" # SIZE.Id # "3" : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
-                          (outs SIZE.DRC:$Rd),
-                          (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
-                          !strconcat(ONAME, SIZE.Id # "3", " $Rn, $Rm, $Rd"),
-                          [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
+//   foreach SIZE = [VxSizeF32, VxSizeD64, VxSizeG64, VxSizeH128] in {
 
-    let Constraints = "$Rd = $Rn" in {
-      def ONAME# "r" # SIZE.Id # "2" : InstVAX<!add(base_op, SIZE.OpOffset),
-                          (outs SIZE.DRC:$Rd),
-                          (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
-                          !strconcat(ONAME, SIZE.Id # "2", " $Rm, $Rd"),
-                          [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
-    }
+//     def ONAME# "r" # SIZE.Id # "3" : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
+//                           (outs SIZE.DRC:$Rd),
+//                           (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
+//                           !strconcat(ONAME, SIZE.Id # "3", " $Rn, $Rm, $Rd"),
+//                           [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
 
-  }
+//     let Constraints = "$Rd = $Rn" in {
+//       def ONAME# "r" # SIZE.Id # "2" : InstVAX<!add(base_op, SIZE.OpOffset),
+//                           (outs SIZE.DRC:$Rd),
+//                           (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
+//                           !strconcat(ONAME, SIZE.Id # "2", " $Rm, $Rd"),
+//                           [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
+//     }
+
+//   }
+// }
+
+foreach SIZE = [VxSizeF32, VxSizeD64, VxSizeG64, VxSizeH128] in {
+  defm add: MInstVAXINew<0x40, fadd, SIZE>;
+  defm div: MInstVAXINew<0x46, fdiv, SIZE>; // verify type of div
+  defm mul: MInstVAXINew<0x44, fmul, SIZE>; // verify type of mul
+  defm sub: MInstVAXINew<0x42, fsub, SIZE>;
 }
-
-defm : MInstVAXF<"add", 0x40, fadd>;
-defm : MInstVAXF<"div", 0x46, fdiv>; // verify type of div
-defm : MInstVAXF<"mul", 0x44, fmul>; // verify type of mul
-defm : MInstVAXF<"sub", 0x42, fsub>;
-
 
 // CLR - Clear
 // CMP - Compare
