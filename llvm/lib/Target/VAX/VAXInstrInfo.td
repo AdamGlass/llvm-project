@@ -98,7 +98,7 @@ defvar VxGenSizes = [VxSize8, VxSize16, VxSize32];
 
 // CLR - Clear
 
-multiclass MInstVAXI<string ONAME, bits<16> base_op, SDNode NODE, VxSize SIZE /*, bits<8> OPCODE */> {
+multiclass MInstVAX23<bits<16> base_op, SDNode NODE, VxSize SIZE> {
 
   // <base_op>       <op>B2
   // <base_op>+0x1   <op>B3
@@ -106,26 +106,6 @@ multiclass MInstVAXI<string ONAME, bits<16> base_op, SDNode NODE, VxSize SIZE /*
   // <base_op>+0x21  <op>W3
   // <base_op>+0x40  <op>L2
   // <base_op>+0x41  <op>L3
-
-  foreach OPSRC = [SIZE.SRC] in {
-  foreach OPDST = [SIZE.DRC] in {
-    def ONAME # "r" # SIZE.Id # "3" : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
-                          (outs SIZE.DRC:$Rd),
-                          (ins OPSRC:$Rn, SIZE.SRC:$Rm),
-                          !strconcat(ONAME, SIZE.Id # "3", " $Rn, $Rm, $Rd"),
-                          [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
-
-//    let Constraints = "$Rd = $Rn" in {
-//      def ONAME # "r" # SIZE.Id # "2" : InstVAX<!add(base_op, SIZE.OpOffset),
-//                          (outs SIZE.DRC:$Rd),
-//                          (ins OPSRC:$Rn, SIZE.SRC:$Rm),
-//                          !strconcat(ONAME, SIZE.Id # "2", " $Rm, $Rd"),
-//                          [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
-//    }
-  }
-  }
-}
-multiclass MInstVAXINew<bits<16> base_op, SDNode NODE, VxSize SIZE> {
 
     def SIZE.Id # "3" : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
                           (outs SIZE.DstOp:$dst),
@@ -137,13 +117,13 @@ multiclass MInstVAXINew<bits<16> base_op, SDNode NODE, VxSize SIZE> {
 }
 
 foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
-  defm add: MInstVAXINew<0x80, add, SIZE>;
+  defm add: MInstVAX23<0x80, add, SIZE>;
 //  defm bic: MInstVAXI<0x8A, bic, SIZE>;
 //  defm bis: MInstVAXI<0x88, bis, SIZE>;
-  defm div: MInstVAXINew<0x86, sdiv, SIZE>;
-  defm mul: MInstVAXINew<0x84, mul, SIZE>;
-  defm sub: MInstVAXINew<0x82, sub, SIZE>;
-  defm xor: MInstVAXINew<0x8C, xor, SIZE>;
+  defm div: MInstVAX23<0x86, sdiv, SIZE>;
+  defm mul: MInstVAX23<0x84, mul, SIZE>;
+  defm sub: MInstVAX23<0x82, sub, SIZE>;
+  defm xor: MInstVAX23<0x8C, xor, SIZE>;
 }
 
 // Other instructions
@@ -264,41 +244,11 @@ def VxSizeD64: VxSize<64, "d", "D",f64, DFPR, DFPR, 0x20, DVopSrc, DVopSrcPat, D
 def VxSizeG64: VxSize<64, "g", "G", f64, GFPR, GFPR, 0xFD00, GVopSrc, GVopSrcPat, GVopDst, GVopDstPat>;
 def VxSizeH128: VxSize<128, "h","H", f128, HFPR, HFPR, 0xFD20, HVopSrc, HVopSrcPat, HVopDst, HVopDstPat>;
 
-// multiclass MInstVAXF<string ONAME, bits<16> base_op, SDNode NODE /*, bits<8> OPCODE */> {
-
-//   // <base_op>              <op>F2
-//   // <base_op>+0x1          <op>F3
-//   // <base_op>+0x20         <op>D2
-//   // <base_op>+0x21         <op>D3
-//   // <base_op>      0xFD    <op>G2
-//   // <base_op>+0x1  0xFD    <op>G3
-//   // <base_op>+0x20 0xFD    <op>H2
-//   // <base_op>+0x21 0xFD    <op>H3
-
-//   foreach SIZE = [VxSizeF32, VxSizeD64, VxSizeG64, VxSizeH128] in {
-
-//     def ONAME# "r" # SIZE.Id # "3" : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
-//                           (outs SIZE.DRC:$Rd),
-//                           (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
-//                           !strconcat(ONAME, SIZE.Id # "3", " $Rn, $Rm, $Rd"),
-//                           [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
-
-//     let Constraints = "$Rd = $Rn" in {
-//       def ONAME# "r" # SIZE.Id # "2" : InstVAX<!add(base_op, SIZE.OpOffset),
-//                           (outs SIZE.DRC:$Rd),
-//                           (ins SIZE.SRC:$Rn, SIZE.SRC:$Rm),
-//                           !strconcat(ONAME, SIZE.Id # "2", " $Rm, $Rd"),
-//                           [(set SIZE.VT:$Rd, (NODE SIZE.SRC:$Rn, SIZE.SRC:$Rm))]>;
-//     }
-
-//   }
-// }
-
 foreach SIZE = [VxSizeF32, VxSizeD64, VxSizeG64, VxSizeH128] in {
-  defm add: MInstVAXINew<0x40, fadd, SIZE>;
-  defm div: MInstVAXINew<0x46, fdiv, SIZE>; // verify type of div
-  defm mul: MInstVAXINew<0x44, fmul, SIZE>; // verify type of mul
-  defm sub: MInstVAXINew<0x42, fsub, SIZE>;
+  defm add: MInstVAX23<0x40, fadd, SIZE>;
+  defm div: MInstVAX23<0x46, fdiv, SIZE>; // verify type of div
+  defm mul: MInstVAX23<0x44, fmul, SIZE>; // verify type of mul
+  defm sub: MInstVAX23<0x42, fsub, SIZE>;
 }
 
 // CLR - Clear
