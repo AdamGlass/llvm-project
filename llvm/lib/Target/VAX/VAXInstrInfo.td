@@ -62,6 +62,8 @@ defm LVop: VxOperands<i32, GPRnoPC, GPRnoPC, GPRnoPC>;
 defm QVop: VxOperands<i64, QPR, QPR, GPRnoPC>;
 defm OVop: VxOperands<i128, OPR, OPR, GPRnoPC>;
 
+// XXX Can we make OpOffset work or do we need to move to base_op, extended op
+
 class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass src, RegisterClass drc, int opOffset, Operand srcop, ComplexPattern srcpat, Operand dstop, ComplexPattern dstpat>{
   int Num = num;
   string Id = id;
@@ -79,8 +81,8 @@ class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass
 def VxSize8: VxSize<8, "b", "B", i8, GPRB, GPRB, 0, BVopSrc, BVopSrcPat, BVopDst, BVopDstPat>;
 def VxSize16: VxSize<16, "w", "W", i16, GPRW, GPRW, 0x20, WVopSrc, WVopSrcPat, WVopDst, WVopDstPat>;
 def VxSize32: VxSize<32, "l", "L", i32, GPR, GPRnoPC, 0x40, LVopSrc, LVopSrcPat, LVopDst, LVopDstPat>;
-def VxSize64: VxSize<64, "q", "Q", i64, QPR, QPR, 0x40, QVopSrc, QVopSrcPat, QVopDst, QVopDstPat>;
-def VxSize128: VxSize<128, "o", "O", i128, OPR, OPR, 0, OVopSrc, OVopSrcPat, OVopDst, OVopSrcPat>;
+def VxSize64: VxSize<64, "q", "Q", i64, QPR, QPR, -24, QVopSrc, QVopSrcPat, QVopDst, QVopDstPat>;
+def VxSize128: VxSize<128, "o", "O", i128, OPR, OPR, 0xFCDC, OVopSrc, OVopSrcPat, OVopDst, OVopSrcPat>;
 
 defvar VxGenSizes = [VxSize8, VxSize16, VxSize32];
 
@@ -125,6 +127,78 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   defm sub: MInstVAX23<0x82, sub, SIZE>;
   defm xor: MInstVAX23<0x8C, xor, SIZE>;
 }
+
+multiclass MInstVAXID<bits<16> base_op, int val, VxSize SIZE> {
+  let Constraints = "$dst = $dst" in {
+    def SIZE.Id : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
+                          (outs SIZE.DstOp:$dst),
+                          (ins SIZE.DstOp:$dst),
+                          !strconcat(NAME, SIZE.Id # " $dst"),
+                          [(set SIZE.VT:$dst, (add SIZE.DstOpPat:$dst, val))]>;
+  }
+}
+
+foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
+//  defm inc: MInstVAXID<0x94, 1, SIZE>;
+//  defm dec: MInstVAXID<0x94, -1, SIZE>;
+}
+
+foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize64, VxSize128] in {
+  defvar base_op = 0x94;
+  defvar offset = SIZE.OpOffset;
+  def clr # SIZE.Id : InstVAX<!add(!add(base_op, offset),1),
+                        (outs SIZE.DstOp:$dst),
+                        (ins),
+                        "clr" # SIZE.Id # " $dst",
+                        [(store SIZE.DstOpPat:$dst, 0)]>;
+}
+
+// Truncation
+def cvtlw: InstVAX<0xF7,
+                        (outs VxSize16.DstOp:$dst),
+                        (ins  VxSize32.SrcOp:$src),
+                        "cvtlw $src, $dst",
+                        [(set VxSize16.VT:$dst, (trunc VxSize32.SrcOpPat:$src))]>;
+
+def cvtlb: InstVAX<0xF6,
+                        (outs VxSize8.DstOp:$dst),
+                        (ins  VxSize32.SrcOp:$src),
+                        "cvtlw $src, $dst",
+                        [(set VxSize8.VT:$dst, (trunc VxSize32.SrcOpPat:$src))]>;
+
+def cvtwb: InstVAX<0x33,
+                        (outs VxSize8.DstOp:$dst),
+                        (ins  VxSize16.SrcOp:$src),
+                        "cvtlw $src, $dst",
+                        [(set VxSize8.VT:$dst, (trunc VxSize16.SrcOpPat:$src))]>;
+// Sign Extend
+def cvtwl: InstVAX<0x32,
+                        (outs VxSize32.DstOp:$dst),
+                        (ins  VxSize16.SrcOp:$src),
+                        "cvtlw $src, $dst",
+                        [(set VxSize32.VT:$dst, (sext VxSize16.SrcOpPat:$src))]>;
+
+def cvtbw: InstVAX<0x99,
+                        (outs VxSize16.DstOp:$dst),
+                        (ins  VxSize8.SrcOp:$src),
+                        "cvtlw $src, $dst",
+                        [(set VxSize16.VT:$dst, (sext VxSize8.SrcOpPat:$src))]>;
+
+def cvtbl: InstVAX<0x96,
+                        (outs VxSize32.DstOp:$dst),
+                        (ins  VxSize8.SrcOp:$src),
+                        "cvtlw $src, $dst",
+                        [(set VxSize32.VT:$dst, (sext VxSize8.SrcOpPat:$src))]>;
+
+
+// double op (patterns are different)
+// CVT
+// MCOM
+// MNEG
+// MOV (octo)
+// MOVZ
+
+
 
 // Other instructions
 // ADAWI - Add Aligned Word Interlocked
