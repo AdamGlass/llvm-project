@@ -93,12 +93,8 @@ defvar VxGenSizes = [VxSize8, VxSize16, VxSize32];
 //
 // Integer Arithemtic and Logical Instructions
 //
-// CLR - Clear
-// CMP - Compare
-// CVT - Convert
-// DEC - Decrement
 
-// CLR - Clear
+// CMP - Compare
 
 multiclass MInstVAX23<bits<16> base_op, SDNode NODE, VxSize SIZE> {
 
@@ -118,6 +114,7 @@ multiclass MInstVAX23<bits<16> base_op, SDNode NODE, VxSize SIZE> {
     // let need to define 2 variant but have to get constraints right
 }
 
+// ADD, DIV, MUL, SUB, XOR
 foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   defm add: MInstVAX23<0x80, add, SIZE>;
 //  defm bic: MInstVAXI<0x8A, bic, SIZE>;
@@ -128,31 +125,44 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   defm xor: MInstVAX23<0x8C, xor, SIZE>;
 }
 
-multiclass MInstVAXID<bits<16> base_op, int val, VxSize SIZE> {
-  let Constraints = "$dst = $dst" in {
-    def SIZE.Id : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
-                          (outs SIZE.DstOp:$dst),
-                          (ins SIZE.DstOp:$dst),
-                          !strconcat(NAME, SIZE.Id # " $dst"),
-                          [(set SIZE.VT:$dst, (add SIZE.DstOpPat:$dst, val))]>;
-  }
-}
+// Implementing this is a PIA
+//multiclass MInstVAXID<bits<16> base_op, int val, VxSize SIZE> {
+//}
 
-foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
+//foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
 //  defm inc: MInstVAXID<0x94, 1, SIZE>;
-//  defm dec: MInstVAXID<0x94, -1, SIZE>;
-}
+//  defm : MInstVAXID<"dec",0x94, -1, SIZE>;
+//}
 
+// XXX Is there a spec for the CNT 
+def ashl : InstVAX<0x78,
+                    (outs VxSize32.DstOp:$dst),
+                    (ins VxSize32.SrcOp:$cnt, VxSize32.SrcOp:$src),
+                    "ashl $cnt, $src, $dst",
+                    [(set VxSize32.VT:$dst, (shl VxSize32.SrcOpPat:$src, VxSize32.SrcOpPat:$cnt))]>;
+
+def ashq : InstVAX<0x79,
+                    (outs VxSize64.DstOp:$dst),
+                    (ins VxSize32.SrcOp:$cnt, VxSize64.SrcOp:$src),
+                    "ashq $cnt, $src, $dst",
+                    [(set VxSize64.VT:$dst, (shl VxSize64.SrcOpPat:$src, VxSize32.SrcOpPat:$cnt))]>;
+
+// CLR - Clear
 foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize64, VxSize128] in {
   defvar base_op = 0x94;
   defvar offset = SIZE.OpOffset;
-  def clr # SIZE.Id : InstVAX<!add(!add(base_op, offset),1),
+  def clr # SIZE.Id : InstVAX<!add(base_op, offset),
                         (outs SIZE.DstOp:$dst),
                         (ins),
                         "clr" # SIZE.Id # " $dst",
-                        [(store SIZE.DstOpPat:$dst, 0)]>;
+                        [(store SIZE.DstOpPat:$dst, 0)]> {
+//    let Constraints = "$dst = $dst";
+    let mayStore = 1;
+    let hasSideEffects = 1;
+  }
 }
 
+// CVT - Convert
 // Truncation
 def cvtlw: InstVAX<0xF7,
                         (outs VxSize16.DstOp:$dst),
@@ -190,33 +200,63 @@ def cvtbl: InstVAX<0x96,
                         "cvtlw $src, $dst",
                         [(set VxSize32.VT:$dst, (sext VxSize8.SrcOpPat:$src))]>;
 
+// MOV - Move
+// XXX for MOVQ VxSize64
+foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize128] in {
+  def mov # SIZE.Id : InstVAX<!add(0x90, SIZE.OpOffset),
+                          (outs SIZE.DstOp:$dst),
+                          (ins SIZE.SrcOp:$src),
+                          !strconcat("mov" # SIZE.Id, " $src, $dst"),
+                          [(set SIZE.VT:$dst, (load SIZE.SrcOpPat:$src))]>;
+}
 
-// double op (patterns are different)
-// CVT
-// MCOM
-// MNEG
-// MOV (octo)
-// MOVZ
+foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
+  // MNEG - Move Negated
+  def mneg # SIZE.Id : InstVAX<!add(0x8e, SIZE.OpOffset),
+                          (outs SIZE.DstOp:$dst),
+                          (ins SIZE.SrcOp:$src),
+                          !strconcat("meng" # SIZE.Id, " $src, $dst"),
+                          [(set SIZE.VT:$dst, (sub 0, (load SIZE.SrcOpPat:$src)))]>;
+  // MCOM - Move Complement
+  def mcom # SIZE.Id : InstVAX<!add(0x92, SIZE.OpOffset),
+                          (outs SIZE.DstOp:$dst),
+                          (ins SIZE.SrcOp:$src),
+                          !strconcat("mcom" # SIZE.Id, " $src, $dst"),
+                          [(set SIZE.VT:$dst, (not (load SIZE.SrcOpPat:$src)))]>;
+}
 
+// Zero Extend
+def movzwl: InstVAX<0x3C,
+                        (outs VxSize32.DstOp:$dst),
+                        (ins  VxSize16.SrcOp:$src),
+                        "movzlw $src, $dst",
+                        [(set VxSize32.VT:$dst, (zext VxSize16.SrcOpPat:$src))]>;
 
+def movzbw: InstVAX<0x9B,
+                        (outs VxSize16.DstOp:$dst),
+                        (ins  VxSize8.SrcOp:$src),
+                        "movzlw $src, $dst",
+                        [(set VxSize16.VT:$dst, (zext VxSize8.SrcOpPat:$src))]>;
+
+def movzbl: InstVAX<0x9A,
+                        (outs VxSize32.DstOp:$dst),
+                        (ins  VxSize8.SrcOp:$src),
+                        "movzlw $src, $dst",
+                        [(set VxSize32.VT:$dst, (zext VxSize8.SrcOpPat:$src))]>;
 
 // Other instructions
 // ADAWI - Add Aligned Word Interlocked
 // ADDWC - Add with Carry
 // ASH - Arithmetic Shift
 // BIT - Bit Test
-// CLR - Clear
 // CMP - Compare
-// CVT - Convert
 // DEC - Decrement
 // EDIV - Extended Divide
 // EMUL - Extended Multiply
 // INC - Increment
 
-// MCOM - Move Complement
-// MNEG - Move Negated
 // MOV - Move
-// MOVX - Move Zero-Extended
+// MOVZ - Move Zero-Extended
 // PUSHL - Push Long
 // ROTL - Rotate Long
 // SBWC - Subtract With Carry
