@@ -30,7 +30,8 @@ enum NodeType : unsigned {
 
   // Corresponds to ret instruction
   RET,
-
+  ASHL,
+  VROTL
 };
 }
 

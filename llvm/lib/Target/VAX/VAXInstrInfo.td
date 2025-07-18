@@ -44,6 +44,9 @@ def imm6 : PatLeaf<(imm), [{
     return value <= 63;
 }]>;
 
+// Recognizes signed integers between 1 and 63 (inclusive), fitting in 7 bits
+// def posSImm7 : AsmOperandClass<"posSImm7", "isSImm<7>() && ValueIs>=0">;
+
 multiclass VxOperands<ValueType VT, RegisterClass SRC, RegisterClass DRC, RegisterClass MRC> {
   def Src: Operand<VT> {
     let MIOperandInfo = (ops SRC:$reg, MRC:$mreg);
@@ -134,18 +137,18 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
 //  defm : MInstVAXID<"dec",0x94, -1, SIZE>;
 //}
 
-// XXX Is there a spec for the CNT 
-def ashl : InstVAX<0x78,
-                    (outs VxSize32.DstOp:$dst),
-                    (ins VxSize32.SrcOp:$cnt, VxSize32.SrcOp:$src),
-                    "ashl $cnt, $src, $dst",
-                    [(set VxSize32.VT:$dst, (shl VxSize32.SrcOpPat:$src, VxSize32.SrcOpPat:$cnt))]>;
 
-def ashq : InstVAX<0x79,
-                    (outs VxSize64.DstOp:$dst),
-                    (ins VxSize32.SrcOp:$cnt, VxSize64.SrcOp:$src),
-                    "ashq $cnt, $src, $dst",
-                    [(set VxSize64.VT:$dst, (shl VxSize64.SrcOpPat:$src, VxSize32.SrcOpPat:$cnt))]>;
+//def ashl : InstVAX<0x78,
+//                   (outs VxSize32.DstOp:$dst),
+//                   (ins VxSize8.SrcOp:$cnt, VxSize32.SrcOp:$src),
+//                   "ashl $cnt, $src, $dst",
+//                   [(set VxSize32.VT:$dst, (shl VxSize32.SrcOpPat:$src, (anyext posSimm7:$cnt)))]>;
+
+// def ashq : InstVAX<0x79,
+//                     (outs VxSize64.DstOp:$dst),
+//                     (ins VxSize8.SrcOp:$cnt, VxSize64.SrcOp:$src),
+//                     "ashq $cnt, $src, $dst",
+//                     [(set VxSize64.VT:$dst, (shl VxSize32.SrcOpPat:$src, (anyext VxSize8.SrcOpPat:$cnt)))]>;
 
 // CLR - Clear
 foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize64, VxSize128] in {
@@ -247,16 +250,11 @@ def movzbl: InstVAX<0x9A,
 // Other instructions
 // ADAWI - Add Aligned Word Interlocked
 // ADDWC - Add with Carry
-// ASH - Arithmetic Shift
 // BIT - Bit Test
 // CMP - Compare
-// DEC - Decrement
 // EDIV - Extended Divide
 // EMUL - Extended Multiply
-// INC - Increment
 
-// MOV - Move
-// MOVZ - Move Zero-Extended
 // PUSHL - Push Long
 // ROTL - Rotate Long
 // SBWC - Subtract With Carry
