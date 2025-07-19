@@ -295,11 +295,8 @@ defm : MInstVAXBCond<0x1E, "bcc">;     // Branch on Carry Clear
                                        // Branch on Less Than (unsigned)
 defm : MInstVAXBCond<0x1F, "bcs">;     // Branch on Carry Set
 
-// BB - Branch on Bit
-// BBSC - Branch on Bit (and modify without interlock)
-// BBSSI - Branch on Bit Interlocked
-// BLB - Branch on Low Bit
 
+// Unconditional branches
 def brb: InstVAX<0x11,
                 (outs),
                 (ins BBOp:$addr),
@@ -318,11 +315,28 @@ def jmp: InstVAX<0x17,
                 "jmp $addr",
                 []>;
 
+
+def blbs: InstVAX<0xE8,
+                 (outs),
+                 (ins VxSize8.SrcOp:$src, BBOp:$addr),
+                 "blbs $src, $addr",
+                []>;
+
+// XXX not working
+//def : Pat<(brcond (setne (and VxSize8.SrcOp:$val, (i8 1)), (i8 0)), bb:$target),
+//          (blbs $val, $target)>;
+
+// BLB - Branch on Low Bit
+
+
+
+
 // TODO: Use relaxation to lower to brb/brw
 def: Pat<(brind VPcAddrPat:$dst), (jmp $dst)>;
 def: Pat<(br bb:$dst), (brw $dst)>;
 
-// BSB - Branch to Subroutine (how differs from CALLS/CALLG)
+// TODO - can this be patterned?
+// CASE - Case
 
 let Uses = [PSL] in {
   // MOVPSL
@@ -333,15 +347,14 @@ let Uses = [PSL] in {
                      []>;
 }
 
-// CASE - Case
-// JMP - Jump
+// TODO: Alternate calling convention
+// BSB - Branch to Subroutine (how differs from CALLS/CALLG)
 // JSB - Jump to Subroutine
 // RSB - Return from Subroutine
 
 // Other instructions
 // ADAWI - Add Aligned Word Interlocked
 // ADDWC - Add with Carry
-// BIT - Bit Test
 // CMP - Compare
 // EDIV - Extended Divide
 // EMUL - Extended Multiply
@@ -351,15 +364,20 @@ let Uses = [PSL] in {
 // SBWC - Subtract With Carry
 // TST - Test
 
+
 // Address instructions
 // MOVA - Move Address (possible load/store)
 // PUSHA - Push Address
 
 // BitField
+// BIT - Bit Test
 // CMP - Compare Field
 // EXT - Extract Field
 // FF - Find First
 // INSV - Insert Field
+// BB - Branch on Bit
+// BBSC - Branch on Bit (and modify without interlock)
+// BBSSI - Branch on Bit Interlocked
 
 //
 // Control Instructions
