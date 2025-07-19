@@ -47,8 +47,11 @@ def imm6 : PatLeaf<(imm), [{
 // Recognizes signed integers between 1 and 63 (inclusive), fitting in 7 bits
 // def posSImm7 : AsmOperandClass<"posSImm7", "isSImm<7>() && ValueIs>=0">;
 
-def VPcBrOp : Operand<iPTR>;
-def VPcBrPat : ComplexPattern<iPTR, 2, "selectVPcBrOp", []>;
+def BBOp : Operand<OtherVT>;
+def VPcDispOp : Operand<iPTR>;
+def VPcDispPat : ComplexPattern<iPTR, 2, "selectVPcDispOp", []>;
+def VPcAddrOp : Operand<iPTR>;
+def VPcAddrPat : ComplexPattern<iPTR, 2, "selectVPcAddrOp", []>;
 
 multiclass VxOperands<ValueType VT, RegisterClass SRC, RegisterClass DRC, RegisterClass MRC> {
   def Src: Operand<VT> {
@@ -269,7 +272,7 @@ multiclass MInstVAXBCond<bits<16> op, string COND> {
 
   def b # COND : InstVAX<op,
                 (outs),
-                (ins VPcBrOp:$addr),
+                (ins VPcDispOp:$addr),
                 "b" # COND # " $addr",
                 []>;
 
@@ -299,18 +302,27 @@ defm : MInstVAXBCond<0x1F, "bcs">;     // Branch on Carry Set
 
 def brb: InstVAX<0x11,
                 (outs),
-                (ins VPcBrOp:$addr),
+                (ins BBOp:$addr),
                 "brb $addr",
                 []>;
 
 def brw: InstVAX<0x31,
                 (outs),
-                (ins VPcBrOp:$addr),
+                (ins BBOp:$addr),
                 "brw $addr",
                 []>;
 
-// BSB - Branch to Subroutine (how differs from CALLS/CALLG)
+def jmp: InstVAX<0x17,
+                (outs),
+                (ins VPcAddrOp:$addr),
+                "jmp $addr",
+                []>;
 
+// TODO: Use relaxation to lower to brb/brw
+def: Pat<(brind VPcAddrPat:$dst), (jmp $dst)>;
+def: Pat<(br bb:$dst), (brw $dst)>;
+
+// BSB - Branch to Subroutine (how differs from CALLS/CALLG)
 
 let Uses = [PSL] in {
   // MOVPSL
