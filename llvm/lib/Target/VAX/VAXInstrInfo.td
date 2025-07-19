@@ -47,6 +47,9 @@ def imm6 : PatLeaf<(imm), [{
 // Recognizes signed integers between 1 and 63 (inclusive), fitting in 7 bits
 // def posSImm7 : AsmOperandClass<"posSImm7", "isSImm<7>() && ValueIs>=0">;
 
+def VPcBrOp : Operand<iPTR>;
+def VPcBrPat : ComplexPattern<iPTR, 2, "selectVPcBrOp", []>;
+
 multiclass VxOperands<ValueType VT, RegisterClass SRC, RegisterClass DRC, RegisterClass MRC> {
   def Src: Operand<VT> {
     let MIOperandInfo = (ops SRC:$reg, MRC:$mreg);
@@ -120,12 +123,25 @@ multiclass MInstVAX23<bits<16> base_op, SDNode NODE, VxSize SIZE> {
 // ADD, DIV, MUL, SUB, XOR
 foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   defm add: MInstVAX23<0x80, add, SIZE>;
-//  defm bic: MInstVAXI<0x8A, bic, SIZE>;
-//  defm bis: MInstVAXI<0x88, bis, SIZE>;
   defm div: MInstVAX23<0x86, sdiv, SIZE>;
   defm mul: MInstVAX23<0x84, mul, SIZE>;
   defm sub: MInstVAX23<0x82, sub, SIZE>;
   defm xor: MInstVAX23<0x8C, xor, SIZE>;
+}
+
+foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
+  def bic # SIZE.Id # "3": InstVAX<!add(0x8B, SIZE.OpOffset),
+                                   (outs SIZE.DstOp:$dst),
+                                   (ins SIZE.SrcOp:$mask, SIZE.SrcOp:$src),
+                                   "bic" # SIZE.Id # "3 $mask, $src, $dst",
+                                   [(set SIZE.VT:$dst, (and (not SIZE.SrcOpPat:$mask),  SIZE.SrcOpPat:$src))]>;
+  // XXX add BIC<SIZE>2
+
+  def bis # SIZE.Id # "3": InstVAX<!add(0x88, SIZE.OpOffset),
+                                   (outs SIZE.DstOp:$dst),
+                                   (ins SIZE.SrcOp:$mask, SIZE.SrcOp:$src),
+                                   "bis" # SIZE.Id # "3 $mask, $src, $dst",
+                                   [(set SIZE.VT:$dst, (or SIZE.SrcOpPat:$mask,  SIZE.SrcOpPat:$src))]>;
 }
 
 // Implementing this is a PIA
@@ -247,6 +263,69 @@ def movzbl: InstVAX<0x9A,
                         "movzlw $src, $dst",
                         [(set VxSize32.VT:$dst, (zext VxSize8.SrcOpPat:$src))]>;
 
+
+// BR - Branch
+multiclass MInstVAXBCond<bits<16> op, string COND> {
+
+  def b # COND : InstVAX<op,
+                (outs),
+                (ins VPcBrOp:$addr),
+                "b" # COND # " $addr",
+                []>;
+
+}
+
+defm : MInstVAXBCond<0x14, "bgtr">;    // Branch on Greater (signed)
+defm : MInstVAXBCond<0x15, "bleq">;    // Branch on Less Than or Equal (signed)
+                                       // Branch on Not Equal (signed)
+defm : MInstVAXBCond<0x12, "bneq">;    // Branch on Not Equal (unsigned)
+                                       // Branch on Equal (signed)
+defm : MInstVAXBCond<0x13, "beql">;    // Branch on Equal (unsigned)
+defm : MInstVAXBCond<0x18, "bgeq">;    // Branch on Greater Than or Equal (signed)
+defm : MInstVAXBCond<0x19, "blss">;    // Branch on Less Than (signed)
+defm : MInstVAXBCond<0x1A, "bgtru">;   // Branch on Greater Than (unsigned)
+defm : MInstVAXBCond<0x1B, "blequ">;   // Branch on Less Than or Equal (unsigned)
+defm : MInstVAXBCond<0x1C, "bvc">;     // Branch on Overflow Clear
+defm : MInstVAXBCond<0x1D, "bvs">;     // Branch on Overflow Set
+                                       // Branch on Greater than Or Equal
+defm : MInstVAXBCond<0x1E, "bcc">;     // Branch on Carry Clear
+                                       // Branch on Less Than (unsigned)
+defm : MInstVAXBCond<0x1F, "bcs">;     // Branch on Carry Set
+
+// BB - Branch on Bit
+// BBSC - Branch on Bit (and modify without interlock)
+// BBSSI - Branch on Bit Interlocked
+// BLB - Branch on Low Bit
+
+def brb: InstVAX<0x11,
+                (outs),
+                (ins VPcBrOp:$addr),
+                "brb $addr",
+                []>;
+
+def brw: InstVAX<0x31,
+                (outs),
+                (ins VPcBrOp:$addr),
+                "brw $addr",
+                []>;
+
+// BSB - Branch to Subroutine (how differs from CALLS/CALLG)
+
+
+let Uses = [PSL] in {
+  // MOVPSL
+  def movpsl: InstVAX<0xDC,
+                     (outs VxSize32.DstOp:$dst),
+                     (ins),
+                     "movpsl $dst",
+                     []>;
+}
+
+// CASE - Case
+// JMP - Jump
+// JSB - Jump to Subroutine
+// RSB - Return from Subroutine
+
 // Other instructions
 // ADAWI - Add Aligned Word Interlocked
 // ADDWC - Add with Carry
@@ -276,17 +355,8 @@ def movzbl: InstVAX<0x9A,
 // ACB - Add Compare and Branch
 // AOBLEQ - Add One and Branch Less Than Equal
 // AOBLSS - Add One and Branch Less Than Equal
-// B - Branch on {condition}
-// BB - Branch on Bit
-// BBSC - Branch on Bit (and modify without interlock)
-// BBSSI - Branch on Bit Interlocked
-// BLB - Branch on Low Bit
-// BR - Branch
-// BSB - Branch to Subroutine (how differs from CALLS/CALLG)
-// CASE - Case
-// JMP - Jump
-// JSB - Jump to Subroutine
-// RSB - Return from Subroutine
+
+
 // SOBGEQ - Subtract One and Branch Greater Than Equal
 // SOBGTR - Subtract One and Branch Greater Than
 
