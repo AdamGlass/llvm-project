@@ -18,8 +18,8 @@ include "VAXInstrFormats.td"
 
 // VAX specific DAG Nodes
 
-def VAXRet : SDNode<"VAXISD::RET", SDTNone,
-                      [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
+//def VAXRet : SDNode<"VAXISD::RET", SDTNone,
+//                      [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
 def VAXRegMask : SDNode<"VAXISD::PROCENTRYMASK", SDTUnaryOp,
                       [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
 
@@ -267,7 +267,66 @@ def movzbl: InstVAX<0x9A,
                         [(set VxSize32.VT:$dst, (zext VxSize8.SrcOpPat:$src))]>;
 
 
-// BR - Branch
+multiclass MCmp<VxSize SIZE> {
+  let Defs = [PSL] in
+  def cmp # SIZE.Id : InstVAX<!add(0x91, SIZE.OpOffset),
+                              (outs),
+                              (ins SIZE.SrcOp:$src1, SIZE.SrcOp:$src2),
+                              "cmp" # SIZE.Id # " $src1, $src2",
+                              []>;
+  //defvar CMPInstr = !cast<Instruction>("cmp" # SIZE.Id);
+  //def : Pat<(setcc SIZE.SrcOp:$lhs, SIZE.SrcOp:$rhs, SETLE),
+    //        (CMPInstr $lhs, $rhs)>;
+
+}
+
+foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
+  defm: MCmp<SIZE>;
+}
+
+//def: Pat<(setcc VxSize8.SrcOp:$lhs, VxSize8.SrcOp:$rhs, SETLE),
+//         (cmpb $lhs, $rhs)>;
+
+//multiclass MCmpPat<VxSize SIZE> {
+//  def: Pat<(setcc SIZE.SrcOp:$lhs, SIZE.SrcOp:$rhs, SETLE),
+//         (cmpb $lhs, $rhs)>;
+//}
+
+//defm: MCmpPat<VxSize8>;
+
+//PatM
+
+// foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
+//   defvar CmpInstr = !cast<Instruction>("cmp" # SIZE.Id);
+//   foreach COND = [SETOEQ, SETOGT, SETOGE, SETOLT, SETOLE, SETONE,
+//                   SETO, SETUO, SETUEQ, SETUGT, SETUGE, SETULT,
+//                   SETULE, SETUNE, SETEQ, SETGT, SETGE, SETLT,
+//                   SETLE, SETNE] in {
+//     def : Pat<(setcc SIZE.SrcOp:$lhs, SIZE.SrcOp:$rhs, !cast<CondCode>(COND)),
+//               (CmpInstr $lhs, $rhs)>;
+//   }
+// }
+
+//defm : CmpWithCondPatterns<VxSize16>;
+//defm : CmpWithCondPatterns<VxSize32>;
+
+// foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
+//   let Defs = [PSL] in
+//   def cmp # SIZE.Id: InstVAX<!add(0x91, SIZE.OpOffset),
+//                    (outs),
+//                    (ins SIZE.SrcOp:$src1, SIZE.SrcOp:$src2),
+//                    "cmp" # SIZE.Id # " $src1, $src2",
+//                    []>;
+
+//    foreach COND = [SETOEQ, SETOGT, SETOGE, SETOLT, SETOLE, SETONE, SETO  , SETUO , SETUEQ, SETUGT, SETUGE, SETULT, SETULE, SETUNE, SETEQ, SETGT, SETGE, SETLT, SETLE, SETNE] in {
+//       def : Pat<(setcc SIZE.SrcOp:$lhs, SIZE.SrcOp:$rhs, !cast<CondCode>(COND)),
+//             (!cast<Instruction>("cmp" # SIZE.Id) $lhs, $rhs)>;
+//    }
+// }
+
+
+
+// B - Branch
 multiclass MInstVAXBCond<bits<16> op, string COND> {
 
   def b # COND : InstVAX<op,
@@ -328,14 +387,16 @@ def blbs: InstVAX<0xE8,
 
 // BLB - Branch on Low Bit
 
-
-
-
 // TODO: Use relaxation to lower to brb/brw
 def: Pat<(brind VPcAddrPat:$dst), (jmp $dst)>;
 def: Pat<(br bb:$dst), (brw $dst)>;
 
-// TODO - can this be patterned?
+// TODO - can these be patterned?
+// ACB - Add Compare and Branch
+// AOBLEQ - Add One and Branch Less Than Equal
+// AOBLSS - Add One and Branch Less Than Equal
+// SOBGEQ - Subtract One and Branch Greater Than Equal
+// SOBGTR - Subtract One and Branch Greater Than
 // CASE - Case
 
 let Uses = [PSL] in {
@@ -346,6 +407,7 @@ let Uses = [PSL] in {
                      "movpsl $dst",
                      []>;
 }
+
 
 // TODO: Alternate calling convention
 // BSB - Branch to Subroutine (how differs from CALLS/CALLG)
@@ -382,25 +444,24 @@ let Uses = [PSL] in {
 //
 // Control Instructions
 //
-// ACB - Add Compare and Branch
-// AOBLEQ - Add One and Branch Less Than Equal
-// AOBLSS - Add One and Branch Less Than Equal
-
-
-// SOBGEQ - Subtract One and Branch Greater Than Equal
-// SOBGTR - Subtract One and Branch Greater Than
 
 //
 // Procedure Call Instructions
 //
 
-// CALLG - Call Procedure with General Argument List
+// CALLG - Call Procedure with General Argument List (FORTRAN)
 // CALLS - Call Procedure with Stack Argument List
-// RET - return from procedure
+def calls: InstVAX<0xFA,
+                   (outs),
+                   (ins VxSize32.SrcOp:$numarg, VPcAddrOp:$dst),
+                   "calls $numarg, $dst",
+                   []>;
 
 let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
-    def Ret : InstVAX<0, (outs), (ins), "ret", [(VAXRet)]>;
+    def vret : InstVAX<0x04, (outs), (ins), "ret", []>;
 }
+
+
 
 
 //
