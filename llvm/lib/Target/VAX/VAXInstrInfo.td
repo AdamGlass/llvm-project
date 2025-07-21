@@ -492,30 +492,6 @@ let isBarrier = 1, hasSideEffects = 1 in {
 // POPR - Pop Registers
 // PUSHR - Push Registers
 
-//def MovL2 : InstVAX<(outs GPRnoPC:$rd),
-//                    (ins GPR:$rs1),
-//                    "movl3 $rs1, $rd",
-//                    [(set i32:$rd, i32:$rs1)]>;
-
-// def LDC : InstVAX<200, (outs GPRnoPC:$rd),
-//                   (ins i32imm:$i),
-//                   "movl2 $i, $rd",
-//                   [(set i32:$rd, imm6:$i)]>;
-// def LDR : InstVAX<201, (outs GPRnoPC:$Rd),
-//                   (ins GPR:$Rs),
-//                   "movl2 ($Rs), $Rd",
-//                   [(set GPRnoPC:$Rd, (load GPR:$Rs))]>;
-
-// def LDRrd : InstVAX<202, (outs GPRnoPC:$Rd),
-//                     (ins MEMrd:$addr),
-//                     "movl2 $addr, $Rd",
-//                     [(set GPRnoPC:$Rd, (load ADDRrd:$addr))]>;
-
-//def LDRD : InstVAX<(outs GPRnoPC:$Rd),
-//                  (ins GPR:$Rs, i32imm:$i),
-//                  "movl2 something, $Rd",
-//                  [(set GPRnoPC:$Rd, (load (add $Rs $i)))]>
-
 //
 // Not covered - Floating Point, Queue instructions
 //
