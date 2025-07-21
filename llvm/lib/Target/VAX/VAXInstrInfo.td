@@ -18,8 +18,8 @@ include "VAXInstrFormats.td"
 
 // VAX specific DAG Nodes
 
-//def VAXRet : SDNode<"VAXISD::RET", SDTNone,
-//                      [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
+def VAXRetNode : SDNode<"VAXISD::RETNODE", SDTNone,
+                      [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
 def VAXRegMask : SDNode<"VAXISD::PROCENTRYMASK", SDTUnaryOp,
                       [SDNPHasChain, SDNPOptInGlue, SDNPMayLoad, SDNPVariadic]>;
 
@@ -73,7 +73,7 @@ defm OVop: VxOperands<i128, OPR, OPR, GPRnoPC>;
 
 // XXX Can we make OpOffset work or do we need to move to base_op, extended op
 
-class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass src, RegisterClass drc, int opOffset, Operand srcop, ComplexPattern srcpat, Operand dstop, ComplexPattern dstpat>{
+class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass src, RegisterClass drc, int opOffset, Operand srcop, ComplexPattern srcpat, Operand dstop, ComplexPattern dstpat, dag zero>{
   int Num = num;
   string Id = id;
   ValueType VT = vt;
@@ -85,13 +85,14 @@ class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass
   Operand DstOp = dstop;
   ComplexPattern SrcOpPat = srcpat;
   ComplexPattern DstOpPat = dstpat;
+  dag Zero = zero;
 }
 
-def VxSize8: VxSize<8, "b", "B", i8, GPRB, GPRB, 0, BVopSrc, BVopSrcPat, BVopDst, BVopDstPat>;
-def VxSize16: VxSize<16, "w", "W", i16, GPRW, GPRW, 0x20, WVopSrc, WVopSrcPat, WVopDst, WVopDstPat>;
-def VxSize32: VxSize<32, "l", "L", i32, GPR, GPRnoPC, 0x40, LVopSrc, LVopSrcPat, LVopDst, LVopDstPat>;
-def VxSize64: VxSize<64, "q", "Q", i64, QPR, QPR, -24, QVopSrc, QVopSrcPat, QVopDst, QVopDstPat>;
-def VxSize128: VxSize<128, "o", "O", i128, OPR, OPR, 0xFCDC, OVopSrc, OVopSrcPat, OVopDst, OVopSrcPat>;
+def VxSize8: VxSize<8, "b", "B", i8, GPRB, GPRB, 0, BVopSrc, BVopSrcPat, BVopDst, BVopDstPat, (i8 0)>;
+def VxSize16: VxSize<16, "w", "W", i16, GPRW, GPRW, 0x20, WVopSrc, WVopSrcPat, WVopDst, WVopDstPat, (i16 0)>;
+def VxSize32: VxSize<32, "l", "L", i32, GPR, GPRnoPC, 0x40, LVopSrc, LVopSrcPat, LVopDst, LVopDstPat, (i32 0)>;
+def VxSize64: VxSize<64, "q", "Q", i64, QPR, QPR, -24, QVopSrc, QVopSrcPat, QVopDst, QVopDstPat, (i64 0)>;
+def VxSize128: VxSize<128, "o", "O", i128, OPR, OPR, 0xFCDC, OVopSrc, OVopSrcPat, OVopDst, OVopSrcPat, (i128 0)>;
 
 defvar VxGenSizes = [VxSize8, VxSize16, VxSize32];
 
@@ -458,7 +459,7 @@ def calls: InstVAX<0xFA,
                    []>;
 
 let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
-    def vret : InstVAX<0x04, (outs), (ins), "ret", []>;
+    def ret : InstVAX<0x04, (outs), (ins), "ret", [(VAXRetNode)]>;
 }
 
 
@@ -489,6 +490,19 @@ let isBarrier = 1, hasSideEffects = 1 in {
 // BISPSW - Bit Set PSW
 
 // Index - Compute Index
+
+def index: InstVAX<0xA,
+                   (outs VxSize32.DstOp:$indexout),
+                   (ins VxSize32.SrcOp:$subscript, VxSize32.SrcOp:$low, VxSize32.SrcOp:$high, VxSize32.SrcOp:$size, VxSize32.SrcOp:$indexin),
+                   "index $subscript, $low, $high, $size, $indexin, $indexout",
+                   []>;
+// Alt Pattern but $high isn't used
+//                    [(set VxSize32.VT:$indexout,
+//                          (add (mul (sub VxSize32.SrcOpPat:$subscript,
+//                                     VxSize32.SrcOpPat:$low),
+//                                    VxSize32.SrcOpPat:$size),
+//                               VxSize32.SrcOpPat:$indexin))]>;
+
 // POPR - Pop Registers
 // PUSHR - Push Registers
 
@@ -503,10 +517,10 @@ defm DVop: VxOperands<f64, GPRW, GPRW, GPRnoPC>;
 defm GVop: VxOperands<f64, GPRnoPC, GPRnoPC, GPRnoPC>;
 defm HVop: VxOperands<f128, QPR, QPR, GPRnoPC>;
 
-def VxSizeF32: VxSize<32, "f", "F", f32, FFPR, FFPR, 0, FVopSrc, FVopSrcPat, FVopDst, FVopDstPat>;
-def VxSizeD64: VxSize<64, "d", "D",f64, DFPR, DFPR, 0x20, DVopSrc, DVopSrcPat, DVopDst, DVopDstPat>;
-def VxSizeG64: VxSize<64, "g", "G", f64, GFPR, GFPR, 0xFD00, GVopSrc, GVopSrcPat, GVopDst, GVopDstPat>;
-def VxSizeH128: VxSize<128, "h","H", f128, HFPR, HFPR, 0xFD20, HVopSrc, HVopSrcPat, HVopDst, HVopDstPat>;
+def VxSizeF32: VxSize<32, "f", "F", f32, FFPR, FFPR, 0, FVopSrc, FVopSrcPat, FVopDst, FVopDstPat, (f32 0)>;
+def VxSizeD64: VxSize<64, "d", "D",f64, DFPR, DFPR, 0x20, DVopSrc, DVopSrcPat, DVopDst, DVopDstPat, (f64 0)>;
+def VxSizeG64: VxSize<64, "g", "G", f64, GFPR, GFPR, 0xFD00, GVopSrc, GVopSrcPat, GVopDst, GVopDstPat, (f64 0)>;
+def VxSizeH128: VxSize<128, "h","H", f128, HFPR, HFPR, 0xFD20, HVopSrc, HVopSrcPat, HVopDst, HVopDstPat, (f128 0)>;
 
 foreach SIZE = [VxSizeF32, VxSizeD64, VxSizeG64, VxSizeH128] in {
   defm add: MInstVAX23<0x40, fadd, SIZE>;
@@ -515,10 +529,50 @@ foreach SIZE = [VxSizeF32, VxSizeD64, VxSizeG64, VxSizeH128] in {
   defm sub: MInstVAX23<0x42, fsub, SIZE>;
 }
 
+// XXX not sure how to resolve ambiguity with integr clr
 // CLR - Clear
 // CMP - Compare
+
 // CVT - Convert
+
+// XXX VxSize128 didn't work
+foreach SIZEF = [VxSizeF32, VxSizeD64, VxSizeG64] in {
+  def cvtb # SIZEF.Id:
+     InstVAX<!add(0x4c, SIZEF.OpOffset),
+             (outs SIZEF.DstOp:$dst),
+             (ins VxSize8.SrcOp:$src),
+             "cvtb" # SIZEF.Id # " $src, $dst",
+             [(set SIZEF.VT:$dst, (uint_to_fp VxSize8.SrcOpPat:$src))]>;
+
+  def cvtw # SIZEF.Id:
+     InstVAX<!add(0x4d, SIZEF.OpOffset),
+             (outs SIZEF.DstOp:$dst),
+             (ins VxSize16.SrcOp:$src),
+             "cvtw" # SIZEF.Id # " $src, $dst",
+             [(set SIZEF.VT:$dst, (uint_to_fp VxSize16.SrcOpPat:$src))]>;
+  def cvtl # SIZEF.Id:
+     InstVAX<!add(0x4e, SIZEF.OpOffset),
+             (outs SIZEF.DstOp:$dst),
+             (ins VxSize32.SrcOp:$src),
+             "cvtl" # SIZEF.Id # " $src, $dst",
+             [(set SIZEF.VT:$dst, (uint_to_fp VxSize32.SrcOpPat:$src))]>;
+}
+
+// XXX need to do cvt{float}{integer}
+
 // EMOD - Extended Multiple and Integerize
+
+// XXX had problems with 0 and the pattern
+//, VxSizeD64, VxSizeG64, VxSizeH128
+//foreach SIZE = [] in {
+  // MNEG - Move Negated
+//  def mneg # SIZE.Id : InstVAX<!add(0x52, SIZE.OpOffset),
+//                          (outs SIZE.DstOp:$dst),
+//                          (ins SIZE.SrcOp:$src),
+//                          !strconcat("mneg" # SIZE.Id, " $src, $dst"),
+//                          [(set SIZE.VT:$dst, (fsub SIZE.Zero, SIZE.SrcOpPat:$src))]>;
+//}
+
 // MNEG - Move Negated
 // MOV - Move
 // Poly - Polynomial evaluate

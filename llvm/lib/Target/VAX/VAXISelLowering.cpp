@@ -73,8 +73,8 @@ const char *VAXTargetLowering::getTargetNodeName(unsigned Opcode) const {
   switch ((VAXISD::NodeType)Opcode) {
   case VAXISD::FIRST_NUMBER:
     break;
-  case VAXISD::RET:
-    return "VAXISD::RET";
+  case VAXISD::RETNODE:
+    return "VAXISD::RETNODE";
   }
   return nullptr;
 }
@@ -191,7 +191,7 @@ VAXTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
 
   RetOps[0] = Chain; // Update chain
 
-  unsigned Opc = VAXISD::RET;
+  unsigned Opc = VAXISD::RETNODE;
   if (Glue.getNode())
     RetOps.push_back(Glue);
 
