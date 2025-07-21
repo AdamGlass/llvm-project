@@ -463,6 +463,23 @@ let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
 
 
 
+let isBarrier = 1, hasSideEffects = 1 in {
+  // BPT - Breakpoint
+  def bpt: InstVAX<0x03,
+                  (outs),
+                  (ins),
+                  "bpt",
+                  []>;
+
+  // NOP - NOP
+  def nop: InstVAX<0x01,
+                   (outs),
+                   (ins),
+                   "nop",
+                   []>;
+}
+
+
 
 //
 // Miscellaneous Instructions
@@ -470,10 +487,8 @@ let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
 
 // BICPSW - Bit Clear PSW
 // BISPSW - Bit Set PSW
-// BPT - Breakpoint
+
 // Index - Compute Index
-// MOVPSL - Move from PSL
-// NOP - NOP
 // POPR - Pop Registers
 // PUSHR - Push Registers
 
