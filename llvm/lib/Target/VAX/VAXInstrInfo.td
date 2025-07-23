@@ -26,23 +26,11 @@ def VAXRegMask : SDNode<"VAXISD::PROCENTRYMASK", SDTUnaryOp,
 // Operands
 
 // What is the Operand class for?
-// What does MIOperandInfo actually do?
 // ComplexPattern vs. Operand class
 // what is the difference between teh operand class and the memory oriented one?
 // Difference between operand<32>, and operand<iptr>
 //
 
-
-// def MEMrd : Operand<i32> {
-//   let MIOperandInfo = (ops GPR, i32imm);
-// }
-
-// def ADDRrd : ComplexPattern<i32, 2, "selectADDRrd", [frameindex], []>;
-
-def imm6 : PatLeaf<(imm), [{
-    uint32_t value = (uint32_t)N->getZExtValue();
-    return value <= 63;
-}]>;
 
 // Recognizes signed integers between 1 and 63 (inclusive), fitting in 7 bits
 // def posSImm7 : AsmOperandClass<"posSImm7", "isSImm<7>() && ValueIs>=0">;
@@ -53,23 +41,18 @@ def VPcDispPat : ComplexPattern<iPTR, 2, "selectVPcDispOp", []>;
 def VPcAddrOp : Operand<iPTR>;
 def VPcAddrPat : ComplexPattern<iPTR, 2, "selectVPcAddrOp", []>;
 
-multiclass VxOperands<ValueType VT, RegisterClass SRC, RegisterClass DRC, RegisterClass MRC> {
-  def Src: Operand<VT> {
-    let MIOperandInfo = (ops SRC:$reg, MRC:$mreg);
-  }
-  def Dst: Operand<VT> {
-    let MIOperandInfo = (ops DRC:$reg,  MRC:$mreg);
-  }
-
+multiclass VxOperands<ValueType VT> {
+  def Src: Operand<VT>;
+  def Dst: Operand<VT>;
   def SrcPat: ComplexPattern<VT, 2, "select" # NAME # "Src", []>;
   def DstPat: ComplexPattern<VT, 2, "select" # NAME # "Dst", []>;
 }
 
-defm BVop: VxOperands<i8, GPRB, GPRB, GPRnoPC>;
-defm WVop: VxOperands<i16, GPRW, GPRW, GPRnoPC>;
-defm LVop: VxOperands<i32, GPRnoPC, GPRnoPC, GPRnoPC>;
-defm QVop: VxOperands<i64, QPR, QPR, GPRnoPC>;
-defm OVop: VxOperands<i128, OPR, OPR, GPRnoPC>;
+defm BVop: VxOperands<i8>;//, GPRB, GPRB, GPRnoPC>;
+defm WVop: VxOperands<i16>;//, GPRW, GPRW, GPRnoPC>;
+defm LVop: VxOperands<i32>;//, GPRnoPC, GPRnoPC, GPRnoPC>;
+defm QVop: VxOperands<i64>;//, QPR, QPR, GPRnoPC>;
+defm OVop: VxOperands<i128>;//, OPR, OPR, GPRnoPC>;
 
 // XXX Can we make OpOffset work or do we need to move to base_op, extended op
 
@@ -103,6 +86,20 @@ defvar VxGenSizes = [VxSize8, VxSize16, VxSize32];
 //
 // Integer Arithemtic and Logical Instructions
 //
+
+// Experiments
+
+// def FooSrcOp: Operand<i8>;
+// def FooDstOp: Operand<i8>;
+
+// def FooSrcPat: ComplexPattern<i8, 1, "selectFooSrc", []>;
+// def FooDstPat: ComplexPattern<i8, 1, "selectFooDst", []>;
+//    def foob3 : InstVAX<277,
+//                           (outs FooDstOp:$dst),
+//                           (ins FooSrcOp:$src1, FooSrcOp:$src2),
+//                           "foob3 $src1, $src2, $dst",
+//                           [(set i8:$dst, (add FooSrcPat:$src1, FooSrcPat:$src2))]>;
+
 
 // CMP - Compare
 
@@ -462,8 +459,6 @@ let isReturn = 1, isTerminator = 1, mayLoad = 1, isBarrier = 1 in {
     def ret : InstVAX<0x04, (outs), (ins), "ret", [(VAXRetNode)]>;
 }
 
-
-
 let isBarrier = 1, hasSideEffects = 1 in {
   // BPT - Breakpoint
   def bpt: InstVAX<0x03,
@@ -512,10 +507,10 @@ def index: InstVAX<0xA,
 
 // Floating Point
 
-defm FVop: VxOperands<f32, FFPR, FFPR, GPRnoPC>;
-defm DVop: VxOperands<f64, GPRW, GPRW, GPRnoPC>;
-defm GVop: VxOperands<f64, GPRnoPC, GPRnoPC, GPRnoPC>;
-defm HVop: VxOperands<f128, QPR, QPR, GPRnoPC>;
+defm FVop: VxOperands<f32>; //, FFPR, FFPR, GPRnoPC>;
+defm DVop: VxOperands<f64>;// GPRW, GPRW, GPRnoPC>;
+defm GVop: VxOperands<f64>;// GPRnoPC, GPRnoPC, GPRnoPC>;
+defm HVop: VxOperands<f128>;// QPR, QPR, GPRnoPC>;
 
 def VxSizeF32: VxSize<32, "f", "F", f32, FFPR, FFPR, 0, FVopSrc, FVopSrcPat, FVopDst, FVopDstPat, (f32 0)>;
 def VxSizeD64: VxSize<64, "d", "D",f64, DFPR, DFPR, 0x20, DVopSrc, DVopSrcPat, DVopDst, DVopDstPat, (f64 0)>;
