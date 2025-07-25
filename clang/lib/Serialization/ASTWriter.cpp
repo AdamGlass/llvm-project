@@ -5228,6 +5228,14 @@ void ASTWriter::WriteModuleFileExtension(Sema &SemaRef,
   Stream.ExitBlock();
 }
 
+/// Write the state of 'pragma init_seg' at the end of the module.
+void ASTWriter::WriteMSPragmaInitSeg(Sema &SemaRef) {
+  RecordData Record;
+  AddString(SemaRef.CurInitSeg, Record);
+  AddSourceLocation(SemaRef.CurInitSegLoc, Record);
+  Stream.EmitRecord(MSPRAGMA_INIT_SEG, Record);
+}
+
 //===----------------------------------------------------------------------===//
 // General Serialization Routines
 //===----------------------------------------------------------------------===//
@@ -6184,6 +6192,7 @@ ASTFileSignature ASTWriter::WriteASTCore(Sema *SemaPtr, StringRef isysroot,
       WriteOptimizePragmaOptions(*SemaPtr);
       WriteMSStructPragmaOptions(*SemaPtr);
       WriteMSPointersToMembersPragmaOptions(*SemaPtr);
+      WriteMSPragmaInitSeg(*SemaPtr);
     }
     WritePackPragmaOptions(*SemaPtr);
     WriteFloatControlPragmaOptions(*SemaPtr);

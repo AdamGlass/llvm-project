@@ -4443,6 +4443,18 @@ llvm::Error ASTReader::ReadASTBlock(ModuleFile &F,
       for (unsigned I = 0, N = Record.size(); I != N; /*in loop*/)
         DeclsToCheckForDeferredDiags.insert(ReadDeclID(F, Record, I));
       break;
+
+    case MSPRAGMA_INIT_SEG:
+      if (Record.size() < 2)
+        return llvm::createStringError(std::errc::illegal_byte_sequence,
+                                       "invalid init_seg record");
+
+      unsigned Idx = 0;
+      auto SectionName = ReadString(Record, Idx);
+      auto PragmaLocation = ReadSourceLocation(F, Record[Idx]);
+      PragmaMSInitSeg = SectionName;
+      PragmaMSInitSegLoc = PragmaLocation;
+      break;
     }
   }
 }
@@ -9099,6 +9111,9 @@ void ASTReader::UpdateSema() {
       SemaObj->FpPragmaStack.CurrentPragmaLocation = FpPragmaCurrentLocation;
     }
   }
+
+  SemaObj->CurInitSeg = PragmaMSInitSeg;
+  SemaObj->CurInitSegLoc = PragmaMSInitSegLoc;
 
   // For non-modular AST files, restore visiblity of modules.
   for (auto &Import : PendingImportedModulesSema) {

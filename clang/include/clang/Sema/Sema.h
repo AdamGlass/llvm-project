@@ -2068,7 +2068,7 @@ public:
   };
 
   /// Last section used with #pragma init_seg.
-  StringLiteral *CurInitSeg;
+  std::string CurInitSeg;
   SourceLocation CurInitSegLoc;
 
   /// Sections used with #pragma alloc_text.

@@ -1024,6 +1024,10 @@ private:
   int PragmaMSPointersToMembersState = -1;
   SourceLocation PointersToMembersPragmaLocation;
 
+  // The MS pragma init_seg() state
+  std::string PragmaMSInitSeg;
+  SourceLocation PragmaMSInitSegLoc;
+
   /// The pragma float_control state.
   std::optional<FPOptionsOverride> FpPragmaCurrentValue;
   SourceLocation FpPragmaCurrentLocation;
