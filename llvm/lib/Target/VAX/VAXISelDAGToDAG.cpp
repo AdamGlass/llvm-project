@@ -49,19 +49,28 @@ public:
 
   void Select(SDNode *N) override;
 
-  bool selectBVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset) { return false; }
-  bool selectWVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset) { return false; }
-  bool selectFVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset) { return false; }
-  bool selectDVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset) { return false; }
-  bool selectGVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset) { return false; }
-  bool selectHVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset) { return false; }
-  bool selectOVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset) { return false; }
+  bool selectBVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
+  bool selectWVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
+  bool selectFVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
+  bool selectDVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
+  bool selectGVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
+  bool selectHVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
+  bool selectOVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
 
   bool selectVPcAddrOp(SDValue Addr, SDValue &Base, SDValue &Offset) { return false; }
 
-  bool selectLVopSrc(SDValue N, SDValue &Base, SDValue &Offset) {
+  bool selectLVopSrc(SDValue N, SDValue &Direct, SDValue &Base, SDValue &Offset) {
 
-    // NOTE: does anything require just literal?
+    const DataLayout &DL = CurDAG->getDataLayout();
+    SDLoc SDL = SDLoc(N);
+
+    LLVM_DEBUG(dbgs() << "gothere\n");
+    N.dump();
+
+    Direct = SDValue();
+    Base = SDValue();
+    Offset = SDValue();
+
     // Address modes - literal and immediate constant
     if (auto *C = dyn_cast<ConstantSDNode>(N)) {
       MVT VT = MVT::i32;
@@ -72,11 +81,45 @@ public:
       if (!llvm::isUIntN(BitWidth, val))
         return false;
 
-      Offset = CurDAG->getTargetConstant(val, SDLoc(N), MVT::i32);
-      Base = SDValue(); // No base
+      Direct = CurDAG->getTargetConstant(val, SDL, MVT::i32);
       return true;
     }
 
+    if (N.getOpcode() == ISD::CopyFromReg) {
+      Direct = N;
+      return true;
+    }
+
+    if (N.getOpcode() == ISD::FrameIndex) {
+      int FI = cast<FrameIndexSDNode>(N)->getIndex();
+      Base = CurDAG->getTargetFrameIndex(FI, TLI->getPointerTy(DL));
+      Offset = CurDAG->getTargetConstant(0, SDL, MVT::i32);
+      return true;
+    }
+
+    if (N.getOpcode() == ISD::LOAD) {
+      auto *LD = cast<LoadSDNode>(N);
+      SDValue Ptr = LD->getBasePtr();
+      unsigned Opcode = Ptr.getOpcode();
+
+      switch (Opcode) {
+      case ISD::CopyFromReg:
+        Base = Ptr;
+        break;
+      case ISD::FrameIndex: {
+        int FI = cast<FrameIndexSDNode>(Ptr)->getIndex();
+        Base = CurDAG->getTargetFrameIndex(FI, TLI->getPointerTy(DL));
+        Offset = CurDAG->getTargetConstant(0, SDL, MVT::i32);
+        break;
+      }
+      default:
+        llvm_unreachable("unknown load ptr");
+      }
+      return true;
+    }
+
+    N.dump();
+    LLVM_DEBUG(dbgs() << "No  match: "<< N.getOpcode() << "\n");
     return false;
   }
 

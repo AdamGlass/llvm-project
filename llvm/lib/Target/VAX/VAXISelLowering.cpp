@@ -69,6 +69,10 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
 
   setStackPointerRegisterToSaveRestore(VAX::SP);
 
+  // Expand Index Loads (for now)
+  //  setIndexedLoadAction(ISD::PRE_INC, MVT::iPTR, Expand);
+  //  setIndexedLoadAction(ISD::POST_INC, MVT::iPTR, Expand);
+
   // Use i32 for setcc operations results
   setBooleanContents(ZeroOrOneBooleanContent);
 

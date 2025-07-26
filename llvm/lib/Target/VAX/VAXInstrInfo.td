@@ -44,8 +44,8 @@ def VPcAddrPat : ComplexPattern<iPTR, 2, "selectVPcAddrOp", []>;
 multiclass VxOperands<ValueType VT> {
   def Src: Operand<VT>;
   def Dst: Operand<VT>;
-  def SrcPat: ComplexPattern<VT, 2, "select" # NAME # "Src", []>;
-  def DstPat: ComplexPattern<VT, 2, "select" # NAME # "Dst", []>;
+  def SrcPat: ComplexPattern<VT, 3, "select" # NAME # "Src", [add, frameindex, ld]>;
+  def DstPat: ComplexPattern<VT, 3, "select" # NAME # "Dst", [add, frameindex, ld]>;
 }
 
 defm BVop: VxOperands<i8>;//, GPRB, GPRB, GPRnoPC>;
@@ -227,7 +227,7 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize128] in {
                           (outs SIZE.DstOp:$dst),
                           (ins SIZE.SrcOp:$src),
                           !strconcat("mov" # SIZE.Id, " $src, $dst"),
-                          [(set SIZE.VT:$dst, (load SIZE.SrcOpPat:$src))]>;
+                          [(set SIZE.VT:$dst, SIZE.SrcOpPat:$src)]>;
 }
 
 foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
@@ -598,3 +598,8 @@ def PROCENTRYMASK : PseudoInstVAX<(outs),
                        (ins i32imm:$i),
                         ".error",
                        []>;
+
+// Patterns
+def : Pat<(i8 imm:$val), (movb imm:$val)>;
+def : Pat<(i16 imm:$val), (movw imm:$val)>;
+def : Pat<(i32 imm:$val), (movl imm:$val)>;
