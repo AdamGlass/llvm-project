@@ -65,11 +65,9 @@ public:
     SDLoc SDL = SDLoc(N);
 
     LLVM_DEBUG(dbgs() << "gothere\n");
+    CurDAG->dump();
     N.dump();
 
-    Direct = SDValue();
-    Base = SDValue();
-    Offset = SDValue();
 
     // Address modes - literal and immediate constant
     if (auto *C = dyn_cast<ConstantSDNode>(N)) {
@@ -82,11 +80,15 @@ public:
         return false;
 
       Direct = CurDAG->getTargetConstant(val, SDL, MVT::i32);
+      Base = SDValue();
+      Offset = SDValue();
       return true;
     }
 
     if (N.getOpcode() == ISD::CopyFromReg) {
       Direct = N;
+      Base = SDValue();
+      Offset = SDValue();
       return true;
     }
 
@@ -94,6 +96,7 @@ public:
       int FI = cast<FrameIndexSDNode>(N)->getIndex();
       Base = CurDAG->getTargetFrameIndex(FI, TLI->getPointerTy(DL));
       Offset = CurDAG->getTargetConstant(0, SDL, MVT::i32);
+      Direct = SDValue();
       return true;
     }
 
@@ -105,15 +108,19 @@ public:
       switch (Opcode) {
       case ISD::CopyFromReg:
         Base = Ptr;
+        Offset = SDValue();
+        Direct = SDValue();
         break;
       case ISD::FrameIndex: {
         int FI = cast<FrameIndexSDNode>(Ptr)->getIndex();
         Base = CurDAG->getTargetFrameIndex(FI, TLI->getPointerTy(DL));
         Offset = CurDAG->getTargetConstant(0, SDL, MVT::i32);
+        Direct = SDValue();
         break;
       }
       default:
-        llvm_unreachable("unknown load ptr");
+        LLVM_DEBUG(dbgs() << "No load match: "<< N.getOpcode() << "\n");
+        return false;
       }
       return true;
     }
