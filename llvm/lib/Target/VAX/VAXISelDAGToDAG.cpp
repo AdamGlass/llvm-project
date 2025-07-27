@@ -49,17 +49,41 @@ public:
 
   void Select(SDNode *N) override;
 
-  bool selectBVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
-  bool selectWVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
-  bool selectFVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
-  bool selectDVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
-  bool selectGVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
-  bool selectHVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
-  bool selectOVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset, SDValue &Other) { return false; }
+  bool selectBVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset,
+                     SDValue &Other) {
+    return false;
+  }
+  bool selectWVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset,
+                     SDValue &Other) {
+    return false;
+  }
+  bool selectFVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset,
+                     SDValue &Other) {
+    return false;
+  }
+  bool selectDVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset,
+                     SDValue &Other) {
+    return false;
+  }
+  bool selectGVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset,
+                     SDValue &Other) {
+    return false;
+  }
+  bool selectHVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset,
+                     SDValue &Other) {
+    return false;
+  }
+  bool selectOVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset,
+                     SDValue &Other) {
+    return false;
+  }
 
-  bool selectVPcAddrOp(SDValue Addr, SDValue &Base, SDValue &Offset) { return false; }
+  bool selectVPcAddrOp(SDValue Addr, SDValue &Base, SDValue &Offset) {
+    return false;
+  }
 
-  bool selectLVopSrc(SDValue N, SDValue &Direct, SDValue &Base, SDValue &Offset) {
+  bool selectLVopSrc(SDValue N, SDValue &Direct, SDValue &Base,
+                     SDValue &Offset) {
 
     const DataLayout &DL = CurDAG->getDataLayout();
     SDLoc SDL = SDLoc(N);
@@ -68,14 +92,13 @@ public:
     CurDAG->dump();
     N.dump();
 
-
     // Address modes - literal and immediate constant
     if (auto *C = dyn_cast<ConstantSDNode>(N)) {
       MVT VT = MVT::i32;
       unsigned BitWidth = VT.getSizeInBits();
       int64_t val;
 
-      val = C-> getZExtValue();
+      val = C->getZExtValue();
       if (!llvm::isUIntN(BitWidth, val))
         return false;
 
@@ -119,14 +142,14 @@ public:
         break;
       }
       default:
-        LLVM_DEBUG(dbgs() << "No load match: "<< N.getOpcode() << "\n");
+        LLVM_DEBUG(dbgs() << "No load match: " << N.getOpcode() << "\n");
         return false;
       }
       return true;
     }
 
     N.dump();
-    LLVM_DEBUG(dbgs() << "No  match: "<< N.getOpcode() << "\n");
+    LLVM_DEBUG(dbgs() << "No  match: " << N.getOpcode() << "\n");
     return false;
   }
 
