@@ -12,7 +12,10 @@
 #ifndef LLVM_LIB_TARGET_VAX_GISEL_VAXMACHINELEGALIZER_H
 #define LLVM_LIB_TARGET_VAX_GISEL_VAXMACHINELEGALIZER_H
 
+#include "llvm/CodeGen/GlobalISel/GISelChangeObserver.h"
+#include "llvm/CodeGen/GlobalISel/LegalizerHelper.h"
 #include "llvm/CodeGen/GlobalISel/LegalizerInfo.h"
+#include "llvm/CodeGen/MachineRegisterInfo.h"
 
 namespace llvm {
 
