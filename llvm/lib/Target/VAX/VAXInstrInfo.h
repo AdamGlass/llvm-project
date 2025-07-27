@@ -38,7 +38,8 @@ public:
                             MachineBasicBlock::iterator MI, Register DestReg,
                             int FrameIndex, const TargetRegisterClass *RC,
                             const TargetRegisterInfo *TRI,
-                            Register VReg) const override;
+                            Register VReg,
+                            MachineInstr::MIFlag Flag) const override;
 
 #if 0
   /// isLoadFromStackSlot - If the specified machine instruction is a direct

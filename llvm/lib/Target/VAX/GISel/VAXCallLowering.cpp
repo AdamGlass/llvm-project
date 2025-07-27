@@ -147,7 +147,7 @@ bool VAXCallLowering::lowerReturn(MachineIRBuilder &MIRBuilder,
                                   const Value *Val, ArrayRef<Register> VRegs,
                                   FunctionLoweringInfo &FLI,
                                   Register SwiftErrorVReg) const {
-  auto MIB = MIRBuilder.buildInstrNoInsert(VAX::Ret);
+  auto MIB = MIRBuilder.buildInstrNoInsert(VAX::ret);
   bool Success = true;
   MachineFunction &MF = MIRBuilder.getMF();
   const Function &F = MF.getFunction();

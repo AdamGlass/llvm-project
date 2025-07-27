@@ -16,6 +16,7 @@
 #include "VAXInstrInfo.h"
 // #include "VAXMachineFunctionInfo.h"
 #include "VAXSubtarget.h"
+#include "llvm/CodeGen/LivePhysRegs.h"
 #include "llvm/CodeGen/MachineFrameInfo.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineInstrBuilder.h"
