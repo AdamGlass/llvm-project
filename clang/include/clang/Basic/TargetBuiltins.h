@@ -197,7 +197,7 @@ namespace clang {
 #include "clang/Basic/BuiltinsVAX.def"
     LastTSBuiltin
   };
-  }
+  } // namespace VAX
 
   /// VE builtins
   namespace VE {

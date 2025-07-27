@@ -20,6 +20,7 @@
 #include "llvm/Pass.h"
 #include "llvm/PassRegistry.h"
 #include "llvm/Target/TargetMachine.h"
+#include <cstdint>
 
 namespace llvm {
   class FunctionPass;
@@ -32,18 +33,15 @@ namespace llvm {
   class VAXSubtarget;
 
   void initializeVAXLowerThreadLocalPass(PassRegistry &p);
-
   FunctionPass *createVAXFrameToArgsOffsetEliminationPass();
   FunctionPass *createVAXISelDag(VAXTargetMachine &TM,
-                                   CodeGenOptLevel OptLevel);
+                                 CodeGenOptLevel OptLevel);
   ModulePass *createVAXLowerThreadLocalPass();
   void initializeVAXDAGToDAGISelLegacyPass(PassRegistry &);
 
   InstructionSelector *createVAXInstructionSelector(const VAXTargetMachine &,
                                                     const VAXSubtarget &,
                                                     const VAXRegisterBankInfo &);
-
-
 
 } // end namespace llvm;
 

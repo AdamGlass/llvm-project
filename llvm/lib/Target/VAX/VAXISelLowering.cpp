@@ -29,7 +29,7 @@
 #include "llvm/IR/GlobalAlias.h"
 #include "llvm/IR/GlobalVariable.h"
 #include "llvm/IR/Intrinsics.h"
-//#include "llvm/IR/IntrinsicsVAX.h"
+// #include "llvm/IR/IntrinsicsVAX.h"
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/KnownBits.h"
@@ -45,19 +45,37 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
     : TargetLowering(TM), Subtarget(&Subtarget) {
 
   // Set up the register classes.
-  addRegisterClass(MVT::i32, &VAX::GPRCRegClass);
+  addRegisterClass(MVT::i32, &VAX::PSCRegClass);
+  addRegisterClass(MVT::i32, &VAX::GPRRegClass);
+  addRegisterClass(MVT::i32, &VAX::GPRnoRegClass);
+  addRegisterClass(MVT::i32, &VAX::GPRnoPCRegClass);
+  addRegisterClass(MVT::f32, &VAX::FFPRRegClass);
+
+  addRegisterClass(MVT::i8,  &VAX::GPRBRegClass);
+  addRegisterClass(MVT::i16, &VAX::GPRWRegClass);
+
+  addRegisterClass(MVT::i64, &VAX::QPRRegClass);
+  addRegisterClass(MVT::f64, &VAX::DFPRRegClass);
+  addRegisterClass(MVT::f64, &VAX::GFPRRegClass);
+
+  addRegisterClass(MVT::i128, &VAX::OPRRegClass);
+  addRegisterClass(MVT::f128, &VAX::HFPRRegClass);
 
   // Compute derived properties from the register classes
   computeRegisterProperties(Subtarget.getRegisterInfo());
 
   setStackPointerRegisterToSaveRestore(VAX::SP);
 
+  // Expand Index Loads (for now)
+  //  setIndexedLoadAction(ISD::PRE_INC, MVT::iPTR, Expand);
+  //  setIndexedLoadAction(ISD::POST_INC, MVT::iPTR, Expand);
+
   // Use i32 for setcc operations results
   setBooleanContents(ZeroOrOneBooleanContent);
 
   MaxStoresPerMemset = MaxStoresPerMemsetOptSize = 4;
-  MaxStoresPerMemmove = MaxStoresPerMemmoveOptSize
-    = MaxStoresPerMemcpy = MaxStoresPerMemcpyOptSize = 2;
+  MaxStoresPerMemmove = MaxStoresPerMemmoveOptSize = MaxStoresPerMemcpy =
+      MaxStoresPerMemcpyOptSize = 2;
 
   setMinFunctionAlignment(Align(4));
   setPrefFunctionAlignment(Align(4));
@@ -66,13 +84,12 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
   setMaxAtomicSizeInBitsSupported(0);
 }
 
-const char *VAXTargetLowering::
-getTargetNodeName(unsigned Opcode) const
-{
-  switch ((VAXISD::NodeType)Opcode)
-  {
-    case VAXISD::FIRST_NUMBER      : break;
-    case VAXISD::RET               : return "VAXISD::RET";
+const char *VAXTargetLowering::getTargetNodeName(unsigned Opcode) const {
+  switch ((VAXISD::NodeType)Opcode) {
+  case VAXISD::FIRST_NUMBER:
+    break;
+  case VAXISD::RETNODE:
+    return "VAXISD::RETNODE";
   }
   return nullptr;
 }
@@ -85,9 +102,8 @@ getTargetNodeName(unsigned Opcode) const
 
 SDValue VAXTargetLowering::LowerFormalArguments(
     SDValue Chain, CallingConv::ID CallConv, bool isVarArg,
-    const SmallVectorImpl<ISD::InputArg> &Ins,
-    const SDLoc &DL, SelectionDAG &DAG,
-    SmallVectorImpl<SDValue> &InVals) const {
+    const SmallVectorImpl<ISD::InputArg> &Ins, const SDLoc &DL,
+    SelectionDAG &DAG, SmallVectorImpl<SDValue> &InVals) const {
   MachineFunction &MF = DAG.getMachineFunction();
   MachineFrameInfo &MFI = MF.getFrameInfo();
   MachineRegisterInfo &RegInfo = MF.getRegInfo();
@@ -119,30 +135,30 @@ SDValue VAXTargetLowering::LowerFormalArguments(
   //
 
   for (const CCValAssign &VA : ArgLocs) {
-      assert(VA.isMemLoc());
+    assert(VA.isMemLoc());
 
-      unsigned ObjSize = VA.getLocVT().getSizeInBits() / 8;
+    unsigned ObjSize = VA.getLocVT().getSizeInBits() / 8;
 
-      // Is there an issue if the argument is big eg. quad?
+    // Is there an issue if the argument is big eg. quad?
 
-      // Create the frame index object for this incoming parameter...
-      int FI = MFI.CreateFixedObject(ObjSize, VA.getLocMemOffset(), true);
-      // Create the SelectionDAG nodes corresponding to a load
-      // from this parameter
-      SDValue FIN = DAG.getFrameIndex(FI, MVT::i32);
-      InVals.push_back(DAG.getLoad(
-          VA.getLocVT(), DL, Chain, FIN,
-          MachinePointerInfo::getFixedStack(DAG.getMachineFunction(), FI)));
+    // Create the frame index object for this incoming parameter...
+    int FI = MFI.CreateFixedObject(ObjSize, VA.getLocMemOffset(), true);
+    // Create the SelectionDAG nodes corresponding to a load
+    // from this parameter
+    SDValue FIN = DAG.getFrameIndex(FI, MVT::i32);
+    InVals.push_back(DAG.getLoad(
+        VA.getLocVT(), DL, Chain, FIN,
+        MachinePointerInfo::getFixedStack(DAG.getMachineFunction(), FI)));
   }
   return Chain;
 }
 
 SDValue
 VAXTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
-                                 bool IsVarArg,
-                                 const SmallVectorImpl<ISD::OutputArg> &Outs,
-                                 const SmallVectorImpl<SDValue> &OutVals,
-                                 const SDLoc &DL, SelectionDAG &DAG) const {
+                               bool IsVarArg,
+                               const SmallVectorImpl<ISD::OutputArg> &Outs,
+                               const SmallVectorImpl<SDValue> &OutVals,
+                               const SDLoc &DL, SelectionDAG &DAG) const {
   // CCValAssign - represent the assignment of the return value to a location
   SmallVector<CCValAssign, 16> RVLocs;
   // CCState - Info about the registers and stack slot.
@@ -190,7 +206,7 @@ VAXTargetLowering::LowerReturn(SDValue Chain, CallingConv::ID CallConv,
 
   RetOps[0] = Chain; // Update chain
 
-  unsigned Opc = VAXISD::RET;
+  unsigned Opc = VAXISD::RETNODE;
   if (Glue.getNode())
     RetOps.push_back(Glue);
 
@@ -207,7 +223,112 @@ CCAssignFn *VAXTargetLowering::getCCAssignFn(CallingConv::ID CC, bool Return,
     return CC_VAX;
 }
 
+SDValue VAXTargetLowering::LowerCall(CallLoweringInfo &CLI,
+                                     SmallVectorImpl<SDValue> &InVals) const {
+
+  SelectionDAG &DAG = CLI.DAG;
+  MachineFunction &MF = DAG.getMachineFunction();
+  SDLoc &DL = CLI.DL;
+  SmallVector<ISD::OutputArg, 32> &Outs = CLI.Outs;
+  SmallVector<SDValue, 32> &OutVals = CLI.OutVals;
+  SmallVector<ISD::InputArg, 32> &Ins = CLI.Ins;
+  SDValue Chain = CLI.Chain;
+  SDValue Callee = CLI.Callee;
+  bool &IsTailCall = CLI.IsTailCall;
+  CallingConv::ID &CallConv = CLI.CallConv;
+  bool IsVarArg = CLI.IsVarArg;
+
+  SmallVector<CCValAssign, 16> ArgLocs;
+  CCState CCInfo(CallConv, IsVarArg, MF, ArgLocs, *DAG.getContext());
+
+  CCInfo.AnalyzeCallOperands(CLI.Outs, CC_VAX);
+
+  unsigned NumBytes = CCInfo.getStackSize();
+
+  //  LLVM_DEBUG(dbgs() << "stack size: " << NumBytes << "\n");
+
+  SmallVector<std::pair<unsigned, SDValue>, 8> RegsToPass;
+  SmallSet<unsigned, 8> RegsUsed;
+  SmallVector<SDValue, 8> MemOpChains;
+  auto PtrVT = getPointerTy(DAG.getDataLayout());
+
+#if 0
+  //  // Assign locations to all of the outgoing aggregate by value arguments.
+  SmallVector<CCValAssign, 16> ByValArgLocs;
+  CCState CCByValInfo(CallConv, IsVarArg, MF, ByValArgLocs, *DAG.getContext());
+
+  // Reserve stack space for the allocations in CCInfo.
+  CCByValInfo.AllocateStack(CCInfo.getStackSize(), PtrAlign);
+
+  CCByValInfo.AnalyzeCallOperands(Outs, CC_PPC32_SVR4_ByVal);
+
+
+
+
+
+  // Walk the register/memloc assignments, inserting copies/loads.
+  unsigned ExtraArgLocs = 0;
+  for (unsigned i = 0, e = Outs.size(); i != e; ++i) {
+    CCValAssign &VA = ArgLocs[i - ExtraArgLocs];
+    SDValue Arg = OutVals[i];
+
+    switch (VA.getLocInfo()) {
+    default:
+      LLVM_DEBUG(dbgs() << "stack size: " << VA.getLocInfo() << "\n");
+
+      llvm_unreachable("unexpected location for arg");
+      break;
+    case CCValAssign::Full:
+      break;
+    case CCValAssign::SExt:
+      Arg = DAG.getNode(ISD::SIGN_EXTEND, DL, VA.getLocVT(), Arg);
+      break;
+    case CCValAssign::ZExt:
+      Arg = DAG.getNode(ISD::ZERO_EXTEND, DL, VA.getLocVT(), Arg);
+      break;
+
+    }
+
+    if (VA.isRegLoc()) {
+
+    } else {
+      assert(!VA.isMemLoc());
+
+      // is this the copies
+
+#if 0
+    if (Outs[i].Flags.isByVal()) {
+        SDValue SizeNode =
+            DAG.getConstant(Outs[i].Flags.getByValSize(), DL, MVT::i64);
+        SDValue Cpy = DAG.getMemcpy(
+            Chain, DL, DstAddr, Arg, SizeNode,
+            Outs[i].Flags.getNonZeroByValAlign(),
+            /*isVol = */ false, /*AlwaysInline = */ false,
+            /*CI=*/nullptr, std::nullopt, DstInfo, MachinePointerInfo());
+
+        MemOpChains.push_back(Cpy);
+      } else {
+        // Since we pass i1/i8/i16 as i1/i8/i16 on stack and Arg is already
+        // promoted to a legal register type i32, we should truncate Arg back to
+        // i1/i8/i16.
+        if (VA.getValVT() == MVT::i1 || VA.getValVT() == MVT::i8 ||
+            VA.getValVT() == MVT::i16)
+          Arg = DAG.getNode(ISD::TRUNCATE, DL, VA.getValVT(), Arg);
+
+        SDValue Store = DAG.getStore(Chain, DL, Arg, DstAddr, DstInfo);
+        MemOpChains.push_back(Store);
+      }
+    }
+#endif
+  }
+  if (!MemOpChains.empty())
+    Chain = DAG.getNode(ISD::TokenFactor, DL, MVT::Other, MemOpChains);
+
+  }
+#endif
+  report_fatal_error("not done");
+}
+
 //===----------------------------------------------------------------------===//
 //                           VAX Inline Assembly Support
 //===----------------------------------------------------------------------===//
-

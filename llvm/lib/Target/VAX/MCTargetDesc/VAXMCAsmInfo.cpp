@@ -9,7 +9,7 @@
 #include "VAXMCAsmInfo.h"
 using namespace llvm;
 
-void VAXMCAsmInfo::anchor() { }
+void VAXMCAsmInfo::anchor() {}
 
 VAXMCAsmInfo::VAXMCAsmInfo(const Triple &TT) {
   SupportsDebugInformation = true;
@@ -31,4 +31,3 @@ VAXMCAsmInfo::VAXMCAsmInfo(const Triple &TT) {
 
   UseIntegratedAssembler = false;
 }
-

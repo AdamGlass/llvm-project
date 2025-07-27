@@ -16,11 +16,11 @@ class VAXTargetStreamer : public MCTargetStreamer {
 public:
   VAXTargetStreamer(MCStreamer &S);
   ~VAXTargetStreamer() override;
-  virtual void emitCCTopData(StringRef Name){};
-  virtual void emitCCTopFunction(StringRef Name){};
-  virtual void emitCCBottomData(StringRef Name){};
-  virtual void emitCCBottomFunction(StringRef Name){};
+  virtual void emitCCTopData(StringRef Name) {};
+  virtual void emitCCTopFunction(StringRef Name) {};
+  virtual void emitCCBottomData(StringRef Name) {};
+  virtual void emitCCBottomFunction(StringRef Name) {};
 };
-}
+} // namespace llvm
 
 #endif

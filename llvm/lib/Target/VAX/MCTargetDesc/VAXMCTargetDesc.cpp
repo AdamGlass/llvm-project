@@ -50,14 +50,14 @@ static MCRegisterInfo *createVAXMCRegisterInfo(const Triple &TT) {
   return X;
 }
 
-static MCSubtargetInfo *
-createVAXMCSubtargetInfo(const Triple &TT, StringRef CPU, StringRef FS) {
+static MCSubtargetInfo *createVAXMCSubtargetInfo(const Triple &TT,
+                                                 StringRef CPU, StringRef FS) {
   return createVAXMCSubtargetInfoImpl(TT, CPU, /*TuneCPU*/ CPU, FS);
 }
 
 static MCAsmInfo *createVAXMCAsmInfo(const MCRegisterInfo &MRI,
-                                       const Triple &TT,
-                                       const MCTargetOptions &Options) {
+                                     const Triple &TT,
+                                     const MCTargetOptions &Options) {
   MCAsmInfo *MAI = new VAXMCAsmInfo(TT);
 
   // Initial state of the frame pointer is SP.
@@ -68,10 +68,10 @@ static MCAsmInfo *createVAXMCAsmInfo(const MCRegisterInfo &MRI,
 }
 
 static MCInstPrinter *createVAXMCInstPrinter(const Triple &T,
-                                               unsigned SyntaxVariant,
-                                               const MCAsmInfo &MAI,
-                                               const MCInstrInfo &MII,
-                                               const MCRegisterInfo &MRI) {
+                                             unsigned SyntaxVariant,
+                                             const MCAsmInfo &MAI,
+                                             const MCInstrInfo &MII,
+                                             const MCRegisterInfo &MRI) {
   return new VAXInstPrinter(MAI, MII, MRI);
 }
 
@@ -96,7 +96,7 @@ public:
 } // end anonymous namespace
 
 VAXTargetAsmStreamer::VAXTargetAsmStreamer(MCStreamer &S,
-                                               formatted_raw_ostream &OS)
+                                           formatted_raw_ostream &OS)
     : VAXTargetStreamer(S), OS(OS) {}
 
 void VAXTargetAsmStreamer::emitCCTopData(StringRef Name) {
@@ -131,12 +131,10 @@ extern "C" LLVM_EXTERNAL_VISIBILITY void LLVMInitializeVAXTargetMC() {
   RegisterMCAsmInfoFn X(getTheVAXTarget(), createVAXMCAsmInfo);
 
   // Register the MC instruction info.
-  TargetRegistry::RegisterMCInstrInfo(getTheVAXTarget(),
-                                      createVAXMCInstrInfo);
+  TargetRegistry::RegisterMCInstrInfo(getTheVAXTarget(), createVAXMCInstrInfo);
 
   // Register the MC register info.
-  TargetRegistry::RegisterMCRegInfo(getTheVAXTarget(),
-                                    createVAXMCRegisterInfo);
+  TargetRegistry::RegisterMCRegInfo(getTheVAXTarget(), createVAXMCRegisterInfo);
 
   // Register the MC subtarget info.
   TargetRegistry::RegisterMCSubtargetInfo(getTheVAXTarget(),

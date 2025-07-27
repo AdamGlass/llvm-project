@@ -33,18 +33,18 @@ static constexpr auto BuiltinInfos = Builtin::MakeInfos<NumBuiltins>({
 });
 
 void VAXTargetInfo::getTargetDefines(const LangOptions &Opts,
-                                       MacroBuilder &Builder) const {
+                                     MacroBuilder &Builder) const {
   Builder.defineMacro("__vax__");
 }
 
-llvm::SmallVector<Builtin::InfosShard> VAXTargetInfo::getTargetBuiltins() const {
+llvm::SmallVector<Builtin::InfosShard>
+VAXTargetInfo::getTargetBuiltins() const {
   return {{&BuiltinStrings, BuiltinInfos}};
 }
 
 ArrayRef<const char *> VAXTargetInfo::getGCCRegNames() const {
-    static const char *const GCCRegNames[] = {
-        "r0", "r1", "r2",  "r3",  "r4", "r5", "r6", "r7",
-        "r8", "r9", "r10", "r11", "ap", "fp", "sp", "pc"
-    };
-    return llvm::ArrayRef(GCCRegNames);
+  static const char *const GCCRegNames[] = {
+      "r0", "r1", "r2",  "r3",  "r4", "r5", "r6", "r7",
+      "r8", "r9", "r10", "r11", "ap", "fp", "sp", "pc"};
+  return llvm::ArrayRef(GCCRegNames);
 }

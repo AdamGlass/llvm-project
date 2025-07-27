@@ -13,6 +13,8 @@
 #ifndef LLVM_LIB_TARGET_VAX_MCTARGETDESC_VAXMCTARGETDESC_H
 #define LLVM_LIB_TARGET_VAX_MCTARGETDESC_VAXMCTARGETDESC_H
 
+#include <cstdint>
+
 // Defines symbolic names for VAX registers.  This defines a mapping from
 // register name to register number.
 //

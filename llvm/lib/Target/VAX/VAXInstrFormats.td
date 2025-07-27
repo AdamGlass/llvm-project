@@ -9,7 +9,7 @@
 //===----------------------------------------------------------------------===//
 // Instruction format superclass
 //===----------------------------------------------------------------------===//
-class InstVAX<dag outs, dag ins, string asmstr, list<dag> pattern>
+class InstVAX<bits<16> op, dag outs, dag ins, string asmstr, list<dag> pattern>
     : Instruction {
 
     let Namespace = "VAX";
@@ -18,33 +18,34 @@ class InstVAX<dag outs, dag ins, string asmstr, list<dag> pattern>
     let AsmString   = asmstr;
     let Pattern = pattern;
 
-    dag Inst = (ascend);
+    dag Inst = (ascend op);
     dag Op;
 
   // Number of bytes
     let Size = 0;
 }
 
-class InstVAX1<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern>
-      : InstVAX<outs, ins, asmstr, pattern> {
+class InstVAX1<bits<16> op, dag outs, dag ins, string asmstr, list<dag> pattern>
+      : InstVAX<op, outs, ins, asmstr, pattern> {
       dag Op = (ascend op);
 }
 
 class InstVAX2<bits<16> op, dag outs, dag ins, string asmstr, list<dag> pattern>
-      : InstVAX<outs, ins, asmstr, pattern> {
+      : InstVAX<op, outs, ins, asmstr, pattern> {
       dag Op = (ascend op);
 }
 
-class VAXAddrMode<bits<4> mode> {
-    dag Mode = (ascend mode);
-}
-
 class PseudoInstVAX<dag outs, dag ins, string asmstr, list<dag> pattern>
-      : InstVAX<outs, ins, asmstr, pattern> {
+      : InstVAX<0, outs, ins, asmstr, pattern> {
   let isCodeGenOnly = 1;
   let Pattern = pattern;
   dag Instr = (ascend);
   let hasNoSchedulingInfo = 1;
+}
+
+#ifdef DEAD
+class VAXAddrMode<bits<4> mode> {
+    dag Mode = (ascend mode);
 }
 
 def VAXRegAddr: VAXAddrMode<5>;
@@ -69,7 +70,6 @@ class VAXEncOpRegister<string reg_opnd> {
     dag Value = (ascend (operand "$"#reg_opnd, 4),  0b0101);
 }
 
-#ifdef NOTYET        
 // instruction with 3 registers and small opcode
 class InstVAXOSR3<bits<8> op, dag outs, dag ins, string asmstr, list<dag> pattern> : InstVAX<outs, ins, asmstr, pattern> {
 

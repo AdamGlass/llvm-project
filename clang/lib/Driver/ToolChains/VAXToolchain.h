@@ -19,7 +19,7 @@ namespace toolchains {
 class LLVM_LIBRARY_VISIBILITY VAXToolChain : public ToolChain {
 public:
   VAXToolChain(const Driver &D, const llvm::Triple &Triple,
-                 const llvm::opt::ArgList &Args);
+               const llvm::opt::ArgList &Args);
   bool isPICDefault() const override;
   bool isPIEDefault(const llvm::opt::ArgList &Args) const override;
   bool isPICDefaultForced() const override;

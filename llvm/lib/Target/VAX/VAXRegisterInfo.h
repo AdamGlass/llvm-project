@@ -14,6 +14,7 @@
 #define LLVM_LIB_TARGET_VAX_VAXREGISTERINFO_H
 
 #include "llvm/CodeGen/TargetRegisterInfo.h"
+#include <cstdint>
 
 #define GET_REGINFO_HEADER
 #include "VAXGenRegisterInfo.inc"
@@ -30,8 +31,8 @@ public:
 
   BitVector getReservedRegs(const MachineFunction &MF) const override;
 
-  bool eliminateFrameIndex(MachineBasicBlock::iterator II,
-                           int SPAdj, unsigned FIOperandNum,
+  bool eliminateFrameIndex(MachineBasicBlock::iterator II, int SPAdj,
+                           unsigned FIOperandNum,
                            RegScavenger *RS = nullptr) const override;
 
   // Debug information queries.

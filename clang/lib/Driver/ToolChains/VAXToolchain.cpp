@@ -21,7 +21,7 @@ using namespace llvm::opt;
 
 /// VAX tool chain
 VAXToolChain::VAXToolChain(const Driver &D, const llvm::Triple &Triple,
-                               const ArgList &Args)
+                           const ArgList &Args)
     : ToolChain(D, Triple, Args) {
   // ProgramPaths are found via 'PATH' environment variable.
 }
@@ -33,4 +33,3 @@ bool VAXToolChain::isPIEDefault(const llvm::opt::ArgList &Args) const {
 }
 
 bool VAXToolChain::isPICDefaultForced() const { return false; }
-
