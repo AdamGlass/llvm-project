@@ -54,7 +54,7 @@ VAXTargetLowering::VAXTargetLowering(const TargetMachine &TM,
   addRegisterClass(MVT::i32, &VAX::GPRnoPCRegClass);
   addRegisterClass(MVT::f32, &VAX::FFPRRegClass);
 
-  addRegisterClass(MVT::i8,  &VAX::GPRBRegClass);
+  addRegisterClass(MVT::i8, &VAX::GPRBRegClass);
   addRegisterClass(MVT::i16, &VAX::GPRWRegClass);
 
   addRegisterClass(MVT::i64, &VAX::QPRRegClass);
