@@ -41,6 +41,9 @@ private:
   /// selector for the patterns that do not require complex C++.
   bool selectImpl(MachineInstr &I, CodeGenCoverage &CoverageInfo) const;
 
+  bool selectFrameIndex(MachineInstr &I, MachineRegisterInfo &MRI,
+                        MachineFunction &MF) const;
+
   const VAXInstrInfo &TII;
   const VAXRegisterInfo &TRI;
   const VAXRegisterBankInfo &RBI;
@@ -74,13 +77,44 @@ VAXInstructionSelector::VAXInstructionSelector(const VAXTargetMachine &TM,
 }
 
 bool VAXInstructionSelector::select(MachineInstr &I) {
+
   if (!isPreISelGenericOpcode(I.getOpcode()))
     return true;
   if (selectImpl(I, *CoverageInfo))
     return true;
+
+  LLVM_DEBUG(dbgs() << "Got to end of select..aww\n");
+
+  MachineBasicBlock &MBB = *I.getParent();
+  MachineFunction &MF = *MBB.getParent();
+  MachineRegisterInfo &MRI = MF.getRegInfo();
+
+  switch (I.getOpcode()) {
+  default:
+    return false;
+  case TargetOpcode::G_FRAME_INDEX:
+    // case TargetOpcode::G_GEP:
+    return selectFrameIndex(I, MRI, MF);
+  }
+
   return false;
 }
 
+// NB. X86 combines this with GEP
+bool VAXInstructionSelector::selectFrameIndex(MachineInstr &I,
+                                              MachineRegisterInfo &MRI,
+                                              MachineFunction &MF) const {
+  const Register DefReg = I.getOperand(0).getReg();
+  LLT Ty = MRI.getType(DefReg);
+
+  // Use LEA to calculate frame index and GEP
+  I.setDesc(TII.get(VAX::moval));
+  MachineInstrBuilder MIB(MF, I);
+
+  I.addOperand(MachineOperand::CreateImm(0));
+
+  return constrainSelectedInstRegOperands(I, TII, TRI, RBI);
+}
 namespace llvm {
 InstructionSelector *
 createVAXInstructionSelector(const VAXTargetMachine &TM,
