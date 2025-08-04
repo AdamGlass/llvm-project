@@ -15,7 +15,7 @@
 #include "TargetInfo/VAXTargetInfo.h"
 #include "VAX.h"
 #include "VAXInstrInfo.h"
-// #include "VAXMCInstLower.h"
+#include "VAXMCInstLower.h"
 #include "VAXSubtarget.h"
 #include "VAXTargetMachine.h"
 #include "VAXTargetStreamer.h"
@@ -50,14 +50,13 @@ using namespace llvm;
 
 namespace {
 class VAXAsmPrinter : public AsmPrinter {
-  // VAXMCInstLower MCInstLowering;
+  VAXMCInstLower MCInstLowering;
   VAXTargetStreamer &getTargetStreamer();
 
 public:
   explicit VAXAsmPrinter(TargetMachine &TM,
                          std::unique_ptr<MCStreamer> Streamer)
-      : AsmPrinter(TM, std::move(Streamer)) {}
-  // MCInstLowering(*this) {}
+      : AsmPrinter(TM, std::move(Streamer)), MCInstLowering(*this) {}
 
   StringRef getPassName() const override { return "VAX Assembly Printer"; }
 
@@ -83,13 +82,17 @@ VAXTargetStreamer &VAXAsmPrinter::getTargetStreamer() {
 }
 
 void VAXAsmPrinter::emitInstruction(const MachineInstr *MI) {
+  VAX_MC::verifyInstructionPredicates(MI->getOpcode(),
+                                      getSubtargetInfo().getFeatureBits());
+  // Handle pseudo-instructinos
+  switch (MI->getOpcode()) {
+  default: break;
+  }
 
-  SmallString<128> Str;
-  raw_svector_ostream O(Str);
+  MCInst TmpInst;
+  MCInstLowering.Lower(MI, TmpInst);
 
-  MI->print(O);
-  OutStreamer->emitRawText(O.str());
-  //  EmitToStreamer(*OutStreamer, TmpInst);
+  EmitToStreamer(*OutStreamer, TmpInst);
 }
 
 // Force static initialization.

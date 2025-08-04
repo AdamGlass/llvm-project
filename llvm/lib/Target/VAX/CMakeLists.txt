@@ -16,13 +16,14 @@ add_public_tablegen_target(VAXCommonTableGen)
 add_llvm_target(VAXCodeGen
   GISel/VAXCallLowering.cpp
   GISel/VAXInstructionSelector.cpp
-  GISel/VAXRegisterBankInfo.cpp
   GISel/VAXLegalizerInfo.cpp
+  GISel/VAXRegisterBankInfo.cpp
   VAXAsmPrinter.cpp
   VAXFrameLowering.cpp
-  VAXInstrInfo.cpp
   VAXISelDAGToDAG.cpp
   VAXISelLowering.cpp
+  VAXInstrInfo.cpp
+  VAXMCInstLower.cpp
   VAXMachineFunctionInfo.cpp
   VAXRegisterInfo.cpp
   VAXSelectionDAGInfo.cpp

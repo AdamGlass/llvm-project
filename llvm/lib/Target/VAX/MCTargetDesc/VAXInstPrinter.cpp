@@ -17,6 +17,7 @@
 #include "llvm/MC/MCRegister.h"
 #include "llvm/MC/MCSymbol.h"
 #include "llvm/Support/Casting.h"
+#include "llvm/Support/Debug.h"
 #include "llvm/Support/ErrorHandling.h"
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
@@ -34,6 +35,7 @@ void VAXInstPrinter::printRegName(raw_ostream &OS, MCRegister Reg) {
 void VAXInstPrinter::printInst(const MCInst *MI, uint64_t Address,
                                StringRef Annot, const MCSubtargetInfo &STI,
                                raw_ostream &O) {
+  LLVM_DEBUG(dbgs() << "ASMPRINTER\n");
   printInstruction(MI, Address, O);
   printAnnotation(O, Annot);
 }
