@@ -1,4 +1,4 @@
-; RUN: llc --mtriple=vax-unknown-netbsd < %s | FileCheck %s
+; RUN: llc -global-isel --mtriple=vax-unknown-netbsd < %s | FileCheck %s
 define internal void @empty_void() {
 entry:
   ret void

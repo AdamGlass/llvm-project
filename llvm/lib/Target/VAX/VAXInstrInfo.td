@@ -60,8 +60,8 @@ class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass
   int Num = num;
   string Id = id;
   ValueType VT = vt;
-  RegisterClass SRC = src;
-  RegisterClass DRC = drc;
+  RegisterClass SrcRC = src;
+  RegisterClass DstRC = drc;
   int OpOffset = opOffset;
   string ModePrefix = mode_prefix;
   Operand SrcOp = srcop;
@@ -82,27 +82,12 @@ defvar VxGenSizes = [VxSize8, VxSize16, VxSize32];
 //
 // Source: VAX Architecture Reference Manual, '87
 //
+// NOTE: Temporarily treat as load/store architecture to get something running.
+//       Work on addressing mode(s) problem with load/store first.
 
 //
 // Integer Arithemtic and Logical Instructions
 //
-
-// Experiments
-
-// def FooSrcOp: Operand<i8>;
-// def FooDstOp: Operand<i8>;
-
-// def FooSrcPat: ComplexPattern<i8, 1, "selectFooSrc", []>;
-// def FooDstPat: ComplexPattern<i8, 1, "selectFooDst", []>;
-//    def foob3 : InstVAX<277,
-//                           (outs FooDstOp:$dst),
-//                           (ins FooSrcOp:$src1, FooSrcOp:$src2),
-//                           "foob3 $src1, $src2, $dst",
-//                           [(set i8:$dst, (add FooSrcPat:$src1, FooSrcPat:$src2))]>;
-
-
-// CMP - Compare
-
 multiclass MInstVAX23<bits<16> base_op, SDNode NODE, VxSize SIZE> {
 
   // <base_op>       <op>B2
@@ -113,10 +98,10 @@ multiclass MInstVAX23<bits<16> base_op, SDNode NODE, VxSize SIZE> {
   // <base_op>+0x41  <op>L3
 
     def SIZE.Id # "3" : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
-                          (outs SIZE.DstOp:$dst),
-                          (ins SIZE.SrcOp:$src1, SIZE.SrcOp:$src2),
+                          (outs SIZE.DstRC:$dst),
+                          (ins SIZE.SrcRC:$src1, SIZE.SrcRC:$src2),
                           !strconcat(NAME, SIZE.Id # "3", " $src1, $src2, $dst"),
-                          [(set SIZE.VT:$dst, (NODE SIZE.SrcOpPat:$src1, SIZE.SrcOpPat:$src2))]>;
+                          [(set SIZE.VT:$dst, (NODE SIZE.SrcRC:$src1, SIZE.SrcRC:$src2))]>;
 
     // let need to define 2 variant but have to get constraints right
 }
@@ -132,17 +117,17 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
 
 foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   def bic # SIZE.Id # "3": InstVAX<!add(0x8B, SIZE.OpOffset),
-                                   (outs SIZE.DstOp:$dst),
-                                   (ins SIZE.SrcOp:$mask, SIZE.SrcOp:$src),
+                                   (outs SIZE.DstRC:$dst),
+                                   (ins SIZE.SrcRC:$mask, SIZE.SrcRC:$src),
                                    "bic" # SIZE.Id # "3 $mask, $src, $dst",
-                                   [(set SIZE.VT:$dst, (and (not SIZE.SrcOpPat:$mask),  SIZE.SrcOpPat:$src))]>;
+                                   [(set SIZE.VT:$dst, (and (not SIZE.SrcRC:$mask),  SIZE.SrcRC:$src))]>;
   // XXX add BIC<SIZE>2
 
   def bis # SIZE.Id # "3": InstVAX<!add(0x88, SIZE.OpOffset),
-                                   (outs SIZE.DstOp:$dst),
-                                   (ins SIZE.SrcOp:$mask, SIZE.SrcOp:$src),
+                                   (outs SIZE.DstRC:$dst),
+                                   (ins SIZE.SrcRC:$mask, SIZE.SrcRC:$src),
                                    "bis" # SIZE.Id # "3 $mask, $src, $dst",
-                                   [(set SIZE.VT:$dst, (or SIZE.SrcOpPat:$mask,  SIZE.SrcOpPat:$src))]>;
+                                   [(set SIZE.VT:$dst, (or SIZE.SrcRC:$mask,  SIZE.SrcRC:$src))]>;
 }
 
 // Implementing this is a PIA
@@ -156,26 +141,27 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
 
 
 //def ashl : InstVAX<0x78,
-//                   (outs VxSize32.DstOp:$dst),
-//                   (ins VxSize8.SrcOp:$cnt, VxSize32.SrcOp:$src),
+//                   (outs VxSize32.DstRC:$dst),
+//                   (ins VxSize8.SrcRC:$cnt, VxSize32.SrcRC:$src),
 //                   "ashl $cnt, $src, $dst",
-//                   [(set VxSize32.VT:$dst, (shl VxSize32.SrcOpPat:$src, (anyext posSimm7:$cnt)))]>;
+//                   [(set VxSize32.VT:$dst, (shl VxSize32.SrcRC:$src, (anyext posSimm7:$cnt)))]>;
 
 // def ashq : InstVAX<0x79,
-//                     (outs VxSize64.DstOp:$dst),
-//                     (ins VxSize8.SrcOp:$cnt, VxSize64.SrcOp:$src),
+//                     (outs VxSize64.DstRC:$dst),
+//                     (ins VxSize8.SrcRC:$cnt, VxSize64.SrcRC:$src),
 //                     "ashq $cnt, $src, $dst",
-//                     [(set VxSize64.VT:$dst, (shl VxSize32.SrcOpPat:$src, (anyext VxSize8.SrcOpPat:$cnt)))]>;
+//                     [(set VxSize64.VT:$dst, (shl VxSize32.SrcRC:$src, (anyext VxSize8.SrcRC:$cnt)))]>;
 
 // CLR - Clear
 foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize64, VxSize128] in {
   defvar base_op = 0x94;
   defvar offset = SIZE.OpOffset;
   def clr # SIZE.Id : InstVAX<!add(base_op, offset),
-                        (outs SIZE.DstOp:$dst),
+                        (outs SIZE.DstRC:$dst),
                         (ins),
                         "clr" # SIZE.Id # " $dst",
-                        [(store SIZE.DstOpPat:$dst, 0)]> {
+                        []> {
+//                        [(store SIZE.DstRCPat:$dst, 0)]> {
 //    let Constraints = "$dst = $dst";
     let mayStore = 1;
     let hasSideEffects = 1;
@@ -185,95 +171,105 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize64, VxSize128] in {
 // CVT - Convert
 // Truncation
 def cvtlw: InstVAX<0xF7,
-                        (outs VxSize16.DstOp:$dst),
-                        (ins  VxSize32.SrcOp:$src),
+                        (outs VxSize16.DstRC:$dst),
+                        (ins  VxSize32.SrcRC:$src),
                         "cvtlw $src, $dst",
-                        [(set VxSize16.VT:$dst, (trunc VxSize32.SrcOpPat:$src))]>;
+                        [(set VxSize16.VT:$dst, (trunc VxSize32.SrcRC:$src))]>;
 
 def cvtlb: InstVAX<0xF6,
-                        (outs VxSize8.DstOp:$dst),
-                        (ins  VxSize32.SrcOp:$src),
+                        (outs VxSize8.DstRC:$dst),
+                        (ins  VxSize32.SrcRC:$src),
                         "cvtlw $src, $dst",
-                        [(set VxSize8.VT:$dst, (trunc VxSize32.SrcOpPat:$src))]>;
+                        [(set VxSize8.VT:$dst, (trunc VxSize32.SrcRC:$src))]>;
 
 def cvtwb: InstVAX<0x33,
-                        (outs VxSize8.DstOp:$dst),
-                        (ins  VxSize16.SrcOp:$src),
+                        (outs VxSize8.DstRC:$dst),
+                        (ins  VxSize16.SrcRC:$src),
                         "cvtlw $src, $dst",
-                        [(set VxSize8.VT:$dst, (trunc VxSize16.SrcOpPat:$src))]>;
+                        [(set VxSize8.VT:$dst, (trunc VxSize16.SrcRC:$src))]>;
 // Sign Extend
 def cvtwl: InstVAX<0x32,
-                        (outs VxSize32.DstOp:$dst),
-                        (ins  VxSize16.SrcOp:$src),
+                        (outs VxSize32.DstRC:$dst),
+                        (ins  VxSize16.SrcRC:$src),
                         "cvtlw $src, $dst",
-                        [(set VxSize32.VT:$dst, (sext VxSize16.SrcOpPat:$src))]>;
+                        [(set VxSize32.VT:$dst, (sext VxSize16.SrcRC:$src))]>;
 
 def cvtbw: InstVAX<0x99,
-                        (outs VxSize16.DstOp:$dst),
-                        (ins  VxSize8.SrcOp:$src),
+                        (outs VxSize16.DstRC:$dst),
+                        (ins  VxSize8.SrcRC:$src),
                         "cvtlw $src, $dst",
-                        [(set VxSize16.VT:$dst, (sext VxSize8.SrcOpPat:$src))]>;
+                        [(set VxSize16.VT:$dst, (sext VxSize8.SrcRC:$src))]>;
 
 def cvtbl: InstVAX<0x96,
-                        (outs VxSize32.DstOp:$dst),
-                        (ins  VxSize8.SrcOp:$src),
+                        (outs VxSize32.DstRC:$dst),
+                        (ins  VxSize8.SrcRC:$src),
                         "cvtlw $src, $dst",
-                        [(set VxSize32.VT:$dst, (sext VxSize8.SrcOpPat:$src))]>;
+                        [(set VxSize32.VT:$dst, (sext VxSize8.SrcRC:$src))]>;
 
 // MOV - Move
 // XXX for MOVQ VxSize64
 foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize128] in {
   def mov # SIZE.Id : InstVAX<!add(0x90, SIZE.OpOffset),
-                          (outs SIZE.DstOp:$dst),
-                          (ins SIZE.SrcOp:$src),
+                          (outs SIZE.DstRC:$dst),
+                          (ins SIZE.SrcRC:$src),
                           !strconcat("mov" # SIZE.Id, " $src, $dst"),
-                          [(set SIZE.VT:$dst, SIZE.SrcOpPat:$src)]>;
+                          [(set SIZE.VT:$dst, (load SIZE.SrcRC:$src))]>;
+}
+
+def imm8: Operand<i32>, ImmLeaf<i32, [{ return Imm >= 0 && Imm < 256; }]>;
+
+foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize128] in {
+  def mova # SIZE.Id : InstVAX<!add(0x9e, SIZE.OpOffset),
+                          (outs SIZE.DstRC:$dst),
+                          (ins GPR:$base, imm8:$offset),
+                          !strconcat("mova" # SIZE.Id, " [$base + offset], $dst"),
+                          []>;
 }
 
 foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   // MNEG - Move Negated
   def mneg # SIZE.Id : InstVAX<!add(0x8e, SIZE.OpOffset),
-                          (outs SIZE.DstOp:$dst),
-                          (ins SIZE.SrcOp:$src),
+                          (outs SIZE.DstRC:$dst),
+                          (ins SIZE.SrcRC:$src),
                           !strconcat("meng" # SIZE.Id, " $src, $dst"),
-                          [(set SIZE.VT:$dst, (sub 0, (load SIZE.SrcOpPat:$src)))]>;
+                          [(set SIZE.VT:$dst, (sub 0, (load SIZE.SrcRC:$src)))]>;
   // MCOM - Move Complement
   def mcom # SIZE.Id : InstVAX<!add(0x92, SIZE.OpOffset),
-                          (outs SIZE.DstOp:$dst),
-                          (ins SIZE.SrcOp:$src),
+                          (outs SIZE.DstRC:$dst),
+                          (ins SIZE.SrcRC:$src),
                           !strconcat("mcom" # SIZE.Id, " $src, $dst"),
-                          [(set SIZE.VT:$dst, (not (load SIZE.SrcOpPat:$src)))]>;
+                          [(set SIZE.VT:$dst, (not (load SIZE.SrcRC:$src)))]>;
 }
 
 // Zero Extend
 def movzwl: InstVAX<0x3C,
-                        (outs VxSize32.DstOp:$dst),
-                        (ins  VxSize16.SrcOp:$src),
+                        (outs VxSize32.DstRC:$dst),
+                        (ins  VxSize16.SrcRC:$src),
                         "movzlw $src, $dst",
-                        [(set VxSize32.VT:$dst, (zext VxSize16.SrcOpPat:$src))]>;
+                        [(set VxSize32.VT:$dst, (zext VxSize16.SrcRC:$src))]>;
 
 def movzbw: InstVAX<0x9B,
-                        (outs VxSize16.DstOp:$dst),
-                        (ins  VxSize8.SrcOp:$src),
+                        (outs VxSize16.DstRC:$dst),
+                        (ins  VxSize8.SrcRC:$src),
                         "movzlw $src, $dst",
-                        [(set VxSize16.VT:$dst, (zext VxSize8.SrcOpPat:$src))]>;
+                        [(set VxSize16.VT:$dst, (zext VxSize8.SrcRC:$src))]>;
 
 def movzbl: InstVAX<0x9A,
-                        (outs VxSize32.DstOp:$dst),
-                        (ins  VxSize8.SrcOp:$src),
+                        (outs VxSize32.DstRC:$dst),
+                        (ins  VxSize8.SrcRC:$src),
                         "movzlw $src, $dst",
-                        [(set VxSize32.VT:$dst, (zext VxSize8.SrcOpPat:$src))]>;
+                        [(set VxSize32.VT:$dst, (zext VxSize8.SrcRC:$src))]>;
 
 
 multiclass MCmp<VxSize SIZE> {
   let Defs = [PSL] in
   def cmp # SIZE.Id : InstVAX<!add(0x91, SIZE.OpOffset),
                               (outs),
-                              (ins SIZE.SrcOp:$src1, SIZE.SrcOp:$src2),
+                              (ins SIZE.SrcRC:$src1, SIZE.SrcRC:$src2),
                               "cmp" # SIZE.Id # " $src1, $src2",
                               []>;
   //defvar CMPInstr = !cast<Instruction>("cmp" # SIZE.Id);
-  //def : Pat<(setcc SIZE.SrcOp:$lhs, SIZE.SrcOp:$rhs, SETLE),
+  //def : Pat<(setcc SIZE.SrcRC:$lhs, SIZE.SrcRC:$rhs, SETLE),
     //        (CMPInstr $lhs, $rhs)>;
 
 }
@@ -282,11 +278,11 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   defm: MCmp<SIZE>;
 }
 
-//def: Pat<(setcc VxSize8.SrcOp:$lhs, VxSize8.SrcOp:$rhs, SETLE),
+//def: Pat<(setcc VxSize8.SrcRC:$lhs, VxSize8.SrcRC:$rhs, SETLE),
 //         (cmpb $lhs, $rhs)>;
 
 //multiclass MCmpPat<VxSize SIZE> {
-//  def: Pat<(setcc SIZE.SrcOp:$lhs, SIZE.SrcOp:$rhs, SETLE),
+//  def: Pat<(setcc SIZE.SrcRC:$lhs, SIZE.SrcRC:$rhs, SETLE),
 //         (cmpb $lhs, $rhs)>;
 //}
 
@@ -300,7 +296,7 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
 //                   SETO, SETUO, SETUEQ, SETUGT, SETUGE, SETULT,
 //                   SETULE, SETUNE, SETEQ, SETGT, SETGE, SETLT,
 //                   SETLE, SETNE] in {
-//     def : Pat<(setcc SIZE.SrcOp:$lhs, SIZE.SrcOp:$rhs, !cast<CondCode>(COND)),
+//     def : Pat<(setcc SIZE.SrcRC:$lhs, SIZE.SrcRC:$rhs, !cast<CondCode>(COND)),
 //               (CmpInstr $lhs, $rhs)>;
 //   }
 // }
@@ -312,12 +308,12 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
 //   let Defs = [PSL] in
 //   def cmp # SIZE.Id: InstVAX<!add(0x91, SIZE.OpOffset),
 //                    (outs),
-//                    (ins SIZE.SrcOp:$src1, SIZE.SrcOp:$src2),
+//                    (ins SIZE.SrcRC:$src1, SIZE.SrcRC:$src2),
 //                    "cmp" # SIZE.Id # " $src1, $src2",
 //                    []>;
 
 //    foreach COND = [SETOEQ, SETOGT, SETOGE, SETOLT, SETOLE, SETONE, SETO  , SETUO , SETUEQ, SETUGT, SETUGE, SETULT, SETULE, SETUNE, SETEQ, SETGT, SETGE, SETLT, SETLE, SETNE] in {
-//       def : Pat<(setcc SIZE.SrcOp:$lhs, SIZE.SrcOp:$rhs, !cast<CondCode>(COND)),
+//       def : Pat<(setcc SIZE.SrcRC:$lhs, SIZE.SrcRC:$rhs, !cast<CondCode>(COND)),
 //             (!cast<Instruction>("cmp" # SIZE.Id) $lhs, $rhs)>;
 //    }
 // }
@@ -375,12 +371,12 @@ def jmp: InstVAX<0x17,
 
 def blbs: InstVAX<0xE8,
                  (outs),
-                 (ins VxSize8.SrcOp:$src, BBOp:$addr),
+                 (ins VxSize8.SrcRC:$src, BBOp:$addr),
                  "blbs $src, $addr",
                 []>;
 
 // XXX not working
-//def : Pat<(brcond (setne (and VxSize8.SrcOp:$val, (i8 1)), (i8 0)), bb:$target),
+//def : Pat<(brcond (setne (and VxSize8.SrcRC:$val, (i8 1)), (i8 0)), bb:$target),
 //          (blbs $val, $target)>;
 
 // BLB - Branch on Low Bit
@@ -400,7 +396,7 @@ def: Pat<(br bb:$dst), (brw $dst)>;
 let Uses = [PSL] in {
   // MOVPSL
   def movpsl: InstVAX<0xDC,
-                     (outs VxSize32.DstOp:$dst),
+                     (outs VxSize32.DstRC:$dst),
                      (ins),
                      "movpsl $dst",
                      []>;
@@ -451,7 +447,7 @@ let Uses = [PSL] in {
 // CALLS - Call Procedure with Stack Argument List
 def calls: InstVAX<0xFA,
                    (outs),
-                   (ins VxSize32.SrcOp:$numarg, VPcAddrOp:$dst),
+                   (ins VxSize32.SrcRC:$numarg, VPcAddrOp:$dst),
                    "calls $numarg, $dst",
                    []>;
 
@@ -487,16 +483,16 @@ let isBarrier = 1, hasSideEffects = 1 in {
 // Index - Compute Index
 
 def index: InstVAX<0xA,
-                   (outs VxSize32.DstOp:$indexout),
-                   (ins VxSize32.SrcOp:$subscript, VxSize32.SrcOp:$low, VxSize32.SrcOp:$high, VxSize32.SrcOp:$size, VxSize32.SrcOp:$indexin),
+                   (outs VxSize32.DstRC:$indexout),
+                   (ins VxSize32.SrcRC:$subscript, VxSize32.SrcRC:$low, VxSize32.SrcRC:$high, VxSize32.SrcRC:$size, VxSize32.SrcRC:$indexin),
                    "index $subscript, $low, $high, $size, $indexin, $indexout",
                    []>;
 // Alt Pattern but $high isn't used
 //                    [(set VxSize32.VT:$indexout,
-//                          (add (mul (sub VxSize32.SrcOpPat:$subscript,
-//                                     VxSize32.SrcOpPat:$low),
-//                                    VxSize32.SrcOpPat:$size),
-//                               VxSize32.SrcOpPat:$indexin))]>;
+//                          (add (mul (sub VxSize32.SrcRC:$subscript,
+//                                     VxSize32.SrcRC:$low),
+//                                    VxSize32.SrcRC:$size),
+//                               VxSize32.SrcRC:$indexin))]>;
 
 // POPR - Pop Registers
 // PUSHR - Push Registers
@@ -534,23 +530,23 @@ foreach SIZE = [VxSizeF32, VxSizeD64, VxSizeG64, VxSizeH128] in {
 foreach SIZEF = [VxSizeF32, VxSizeD64, VxSizeG64] in {
   def cvtb # SIZEF.Id:
      InstVAX<!add(0x4c, SIZEF.OpOffset),
-             (outs SIZEF.DstOp:$dst),
-             (ins VxSize8.SrcOp:$src),
+             (outs SIZEF.DstRC:$dst),
+             (ins VxSize8.SrcRC:$src),
              "cvtb" # SIZEF.Id # " $src, $dst",
-             [(set SIZEF.VT:$dst, (uint_to_fp VxSize8.SrcOpPat:$src))]>;
+             [(set SIZEF.VT:$dst, (uint_to_fp VxSize8.SrcRC:$src))]>;
 
   def cvtw # SIZEF.Id:
      InstVAX<!add(0x4d, SIZEF.OpOffset),
-             (outs SIZEF.DstOp:$dst),
-             (ins VxSize16.SrcOp:$src),
+             (outs SIZEF.DstRC:$dst),
+             (ins VxSize16.SrcRC:$src),
              "cvtw" # SIZEF.Id # " $src, $dst",
-             [(set SIZEF.VT:$dst, (uint_to_fp VxSize16.SrcOpPat:$src))]>;
+             [(set SIZEF.VT:$dst, (uint_to_fp VxSize16.SrcRC:$src))]>;
   def cvtl # SIZEF.Id:
      InstVAX<!add(0x4e, SIZEF.OpOffset),
-             (outs SIZEF.DstOp:$dst),
-             (ins VxSize32.SrcOp:$src),
+             (outs SIZEF.DstRC:$dst),
+             (ins VxSize32.SrcRC:$src),
              "cvtl" # SIZEF.Id # " $src, $dst",
-             [(set SIZEF.VT:$dst, (uint_to_fp VxSize32.SrcOpPat:$src))]>;
+             [(set SIZEF.VT:$dst, (uint_to_fp VxSize32.SrcRC:$src))]>;
 }
 
 // XXX need to do cvt{float}{integer}
@@ -562,10 +558,10 @@ foreach SIZEF = [VxSizeF32, VxSizeD64, VxSizeG64] in {
 //foreach SIZE = [] in {
   // MNEG - Move Negated
 //  def mneg # SIZE.Id : InstVAX<!add(0x52, SIZE.OpOffset),
-//                          (outs SIZE.DstOp:$dst),
-//                          (ins SIZE.SrcOp:$src),
+//                          (outs SIZE.DstRC:$dst),
+//                          (ins SIZE.SrcRC:$src),
 //                          !strconcat("mneg" # SIZE.Id, " $src, $dst"),
-//                          [(set SIZE.VT:$dst, (fsub SIZE.Zero, SIZE.SrcOpPat:$src))]>;
+//                          [(set SIZE.VT:$dst, (fsub SIZE.Zero, SIZE.SrcRC:$src))]>;
 //}
 
 // MNEG - Move Negated
@@ -598,6 +594,7 @@ def PROCENTRYMASK : PseudoInstVAX<(outs),
                        (ins i32imm:$i),
                         ".error",
                        []>;
+
 
 // Patterns
 def : Pat<(i8 imm:$val), (movb imm:$val)>;
