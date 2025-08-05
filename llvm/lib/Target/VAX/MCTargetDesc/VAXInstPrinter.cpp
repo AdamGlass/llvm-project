@@ -35,7 +35,6 @@ void VAXInstPrinter::printRegName(raw_ostream &OS, MCRegister Reg) {
 void VAXInstPrinter::printInst(const MCInst *MI, uint64_t Address,
                                StringRef Annot, const MCSubtargetInfo &STI,
                                raw_ostream &O) {
-  LLVM_DEBUG(dbgs() << "ASMPRINTER\n");
   printInstruction(MI, Address, O);
   printAnnotation(O, Annot);
 }
