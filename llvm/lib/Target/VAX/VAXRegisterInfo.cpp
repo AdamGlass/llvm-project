@@ -92,6 +92,8 @@ bool VAXRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   Offset += StackSize;
 
   Register FrameReg = getFrameRegister(MF);
+  Register Reg = MI.getOperand(0).getReg();
+  assert(VAX::GPRRegClass.contains(Reg) && "Unexpected register operand");
 
   // Special handling of DBG_VALUE instructions.
   if (MI.isDebugValue()) {
@@ -100,34 +102,14 @@ bool VAXRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     return false;
   }
 
+  int FIOffset;
+  Register BasePtr;
+  FIOffset = TFI->getFrameIndexReference(MF, FrameIndex, BasePtr).getFixed();
+
   // fold constant into offset.
   Offset += MI.getOperand(FIOperandNum + 1).getImm();
-  MI.getOperand(FIOperandNum + 1).ChangeToImmediate(0);
+  MI.getOperand(FIOperandNum + 1).ChangeToImmediate(Offset + FIOffset);
 
-  assert(Offset % 4 == 0 && "Misaligned stack offset");
-  LLVM_DEBUG(errs() << "Offset             : " << Offset << "\n"
-                    << "<--------->\n");
-  Offset /= 4;
-
-  Register Reg = MI.getOperand(0).getReg();
-  assert(VAX::GPRRegClass.contains(Reg) && "Unexpected register operand");
-
-#if 0
-  if (TFI->hasFP(MF)) {
-    if (isImmUs(Offset))
-      InsertFPImmInst(II, TII, Reg, FrameReg, Offset);
-    else
-      InsertFPConstInst(II, TII, Reg, FrameReg, Offset, RS);
-  } else {
-    if (isImmU16(Offset))
-      InsertSPImmInst(II, TII, Reg, Offset);
-    else
-      InsertSPConstInst(II, TII, Reg, Offset, RS);
-  }
-#endif
-
-  // Erase old instruction.
-  MachineBasicBlock &MBB = *MI.getParent();
-  MBB.erase(II);
-  return true;
+  MI.getOperand(FIOperandNum).ChangeToRegister(FrameReg, false);
+  return false;
 }

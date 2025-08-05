@@ -222,7 +222,7 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize128] in {
   def mova # SIZE.Id : InstVAX<!add(0x9e, SIZE.OpOffset),
                           (outs SIZE.DstRC:$dst),
                           (ins GPR:$base, imm8:$offset),
-                          !strconcat("mova" # SIZE.Id, " [$base + offset], $dst"),
+                          !strconcat("mova" # SIZE.Id, " [$base + $offset], $dst"),
                           []>;
 }
 
