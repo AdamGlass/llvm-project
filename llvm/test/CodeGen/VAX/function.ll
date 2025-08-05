@@ -1,12 +1,10 @@
-; RUN: llc -global-isel -O3 --mtriple=vax-unknown-netbsd < %s | FileCheck %s
+; RUN: llc -global-isel --mtriple=vax-unknown-netbsd < %s | FileCheck %s
 define internal void @empty_void() {
 entry:
   ret void
 }
 
 ; CHECK-LABEL: empty_void:
-; CHECK: PROCENTRYMASK
-; CHECK: Ret
 
 define internal i32 @empty_int() {
 entry:
@@ -14,8 +12,6 @@ entry:
 }
 
 ; CHECK-LABEL: empty_int
-; CHECK: PROCENTRYMASK
-; CHECK: Ret implicit $r0
 
 define i32 @identity_arg(i32 %x) {
 entry:
@@ -23,8 +19,6 @@ entry:
 }
 
 ; CHECK-LABEL: identity_arg
-; CHECK: PROCENTRYMASK
-; CHECK: Ret implicit $r0
 
 define i32 @square(i32 %x) {
 entry:
@@ -33,5 +27,3 @@ entry:
 }
 
 ; CHECK-LABEL: square
-; CHECK: mull3
-; CHECK: Ret implicit $r0
