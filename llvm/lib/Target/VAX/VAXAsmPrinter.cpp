@@ -86,6 +86,11 @@ void VAXAsmPrinter::emitInstruction(const MachineInstr *MI) {
                                       getSubtargetInfo().getFeatureBits());
   // Handle pseudo-instructinos
   switch (MI->getOpcode()) {
+  case VAX::PROCENTRYMASK: {
+    uint16_t Mask = MI->getOperand(0).getImm();
+    OutStreamer->emitIntValue(Mask, 2);
+    return;
+  }
   default: break;
   }
 

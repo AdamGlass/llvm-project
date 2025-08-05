@@ -61,28 +61,19 @@ void VAXFrameLowering::emitPrologue(MachineFunction &MF,
   const MCRegisterInfo *MRI = MF.getContext().getRegisterInfo();
   uint64_t StackSize = MFI.getStackSize();
   LivePhysRegs LiveRegs(TRI);
-  uint16_t RegMask;
+  uint16_t EntryMask;
 
-  for (const llvm::MachineBasicBlock &MBB : MF) {
-    for (const llvm::MachineInstr &MI : MBB) {
-      // Process each instruction
-      LiveRegs.addUses(MI);
-    }
-  }
-
-  int i = 0;
-  for (MCPhysReg Reg : VAX::GPRRegClass) {
-    if (LiveRegs.contains(Reg)) {
-      RegMask |= 1 << i;
-    }
-    i++;
+  for (const auto &CSI : MFI.getCalleeSavedInfo()) {
+    unsigned Reg = CSI.getReg();
+    EntryMask |= (1 << Reg);
   }
 
   BuildMI(MBB, MBBI, DL, TII.get(VAX::PROCENTRYMASK))
-      .addImm(RegMask)
+      .addImm(EntryMask)
       .setMIFlags(MachineInstr::FrameSetup);
 
   LLVM_DEBUG(dbgs() << "stack size: " << StackSize << "\n");
+  LLVM_DEBUG(dbgs() << "entry mask: " << EntryMask << "\n");
 }
 
 void VAXFrameLowering::emitEpilogue(MachineFunction &MF,
