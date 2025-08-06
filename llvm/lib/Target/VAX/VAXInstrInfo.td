@@ -421,9 +421,9 @@ def imm32: Operand<i32>;
 
 // PUSHL - Push Long
 let hasSideEffects = 1, Uses = [SP], Defs = [SP], mayStore = 1 in {
-  def pushl_i: InstVAX<0xDD,
+  def pushl: InstVAX<0xDD,
                      (outs),
-                     (ins imm32:$src),
+                     (ins GPR:$src),
                      "pushl $src",
                      []>;
 }
