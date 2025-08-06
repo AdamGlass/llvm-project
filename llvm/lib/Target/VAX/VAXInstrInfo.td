@@ -415,7 +415,19 @@ let Uses = [PSL] in {
 // EDIV - Extended Divide
 // EMUL - Extended Multiply
 
+
+def imm32: Operand<i32>;
+
+
 // PUSHL - Push Long
+let hasSideEffects = 1, Uses = [SP], Defs = [SP], mayStore = 1 in {
+  def pushl_i: InstVAX<0xDD,
+                     (outs),
+                     (ins imm32:$src),
+                     "pushl $src",
+                     []>;
+}
+
 // ROTL - Rotate Long
 // SBWC - Subtract With Carry
 // TST - Test
@@ -447,7 +459,7 @@ let Uses = [PSL] in {
 // CALLS - Call Procedure with Stack Argument List
 def calls: InstVAX<0xFA,
                    (outs),
-                   (ins VxSize32.SrcRC:$numarg, VPcAddrOp:$dst),
+                   (ins imm32:$numarg, VPcAddrOp:$dst),
                    "calls $numarg, $dst",
                    []>;
 

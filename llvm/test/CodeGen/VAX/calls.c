@@ -9,7 +9,7 @@ void vfunc7(int a, int b, int c, int d, int e, int f, int g);
 void vfunc_zext_b(char a);
 void vfunc_zext_w(unsigned short a);
 void vfunc_zext_q(unsigned long a);
-void vfunc_zext_i128(__int128 a);
+void vfunc_zext_i128(long long a);
 
 void tfunc() {
     vfunc();
