@@ -459,7 +459,7 @@ let hasSideEffects = 1, Uses = [SP], Defs = [SP], mayStore = 1 in {
 // CALLS - Call Procedure with Stack Argument List
 def calls: InstVAX<0xFA,
                    (outs),
-                   (ins imm32:$numarg, VPcAddrOp:$dst),
+                   (ins imm32:$numarg, GPR:$dst),
                    "calls $numarg, $dst",
                    []>;
 
