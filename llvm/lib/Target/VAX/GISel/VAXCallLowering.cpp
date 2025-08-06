@@ -203,7 +203,50 @@ bool VAXCallLowering::lowerFormalArguments(MachineIRBuilder &MIRBuilder,
 
 bool VAXCallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
                                 CallLoweringInfo &Info) const {
+#if 0
+  MachineFunction &MF = MIRBuilder.getMF();
+  const Function &F = MF.getFunction();
+  MachineRegisterInfo &MRI = MF.getRegInfo();
+  const DataLayout &DL = F.getDataLayout();
+  const VAXSubtarget &STI = MF.getSubtarget<VAXSubtarget>();
+  const TargetInstrInfo &TII = *STI.getInstrInfo();
+  const VAXRegisterInfo *TRI = STI.getRegisterInfo();
+
+  unsigned CallOpc = VAX::calls;
+
+  auto MIB = MIRBuilder.buildInstrNoInsert(CallOpc)
+                 .add(Info.Callee)
+                           .addRegMask(TRI->getCallPreservedMask(MF, Info.CallConv));
+
+  SmallVector<ArgInfo, 8> SplitArgs;
+  for (const auto &OrigArg : Info.OrigArgs) {
+    splitToValueTypes(OrigArg, SplitArgs, DL, Info.CallConv);
+  }
+
+  MIB.addImm(SplitArgs.size());
+
+  // Do the actual argument marshalling.
+  VAXOutgoingValueAssigner Assigner(CC_VAX);
+  VAXOutgoingValueHandler Handler(MIRBuilder, MRI, MIB);
+  if (!determineAndHandleAssignments(Handler, Assigner, SplitArgs, MIRBuilder,
+                                     Info.CallConv, Info.IsVarArg))
+    return false;
+
+  LLVM_DEBUG(dbgs() << "split to value");
+
+  // Now we can add the actual call instruction to the correct basic block.
+  MIRBuilder.insertInstr(MIB);
+
+  if (Info.Callee.isReg())
+    MIB->getOperand(1).setReg(constrainOperandRegClass(
+        MF, *TRI, MRI, *MF.getSubtarget().getInstrInfo(),
+        *MF.getSubtarget().getRegBankInfo(), *MIB, MIB->getDesc(), Info.Callee,
+        0));
+
+  return true;
+#else
   return false;
+#endif
 }
 
 #endif // LLVM_LIB_TARGET_MVAX_GLSEL_VAXCALLLOWERING_H
