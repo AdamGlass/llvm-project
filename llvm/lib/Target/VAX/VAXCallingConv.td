@@ -35,3 +35,5 @@ def RetCC_VAX : CallingConv<[
   // been lowered to 2 32-bit values.
   CCIfType<[i32], CCAssignToReg<[R0, R1]>>
 ]>;
+
+def CSR_VAX : CalleeSavedRegs<(add (sequence "R%u", 2, 11), AP, FP, SP)>;

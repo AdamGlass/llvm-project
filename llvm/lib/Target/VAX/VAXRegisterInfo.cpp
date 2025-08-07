@@ -44,13 +44,13 @@ VAXRegisterInfo::VAXRegisterInfo() : VAXGenRegisterInfo(0) {}
 
 const MCPhysReg *
 VAXRegisterInfo::getCalleeSavedRegs(const MachineFunction *MF) const {
-  static const MCPhysReg CalleeSavedRegs[] = {
-      VAX::R2, VAX::R3, VAX::R4, VAX::R5,  VAX::R6,
-      VAX::R7, VAX::R8, VAX::R9, VAX::R10, VAX::R11};
-
-  return CalleeSavedRegs;
+  return CSR_VAX_SaveList;
 }
 
+const uint32_t *VAXRegisterInfo::getCallPreservedMask(const MachineFunction &MF,
+                                                      CallingConv::ID) const {
+    return CSR_VAX_RegMask;
+}
 BitVector VAXRegisterInfo::getReservedRegs(const MachineFunction &MF) const {
   BitVector Reserved(getNumRegs());
 
