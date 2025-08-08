@@ -16,6 +16,7 @@
 #define LLVM_LIB_TARGET_M68K_GLSEL_VAXCALLLOWERING_H
 
 #include "VAXCallLowering.h"
+#include "VAXCallingConv.h"
 #include "VAXISelLowering.h"
 #include "VAXInstrInfo.h"
 #include "VAXSubtarget.h"
@@ -31,70 +32,43 @@
 #define DEBUG_TYPE "vax-call-lowering"
 
 // Not handled
-// * varargs
 // * split arguments
 // * split return
 
 using namespace llvm;
 
 namespace {
-struct VAXFormalArgHandler : public VAXIncomingValueHandler {
-  VAXFormalArgHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI)
-      : VAXIncomingValueHandler(MIRBuilder, MRI) {}
+
+struct VAXOutgoingValueAssigner : public CallLowering::OutgoingValueAssigner {
+  // For outgoing, fixed and varargs are the same
+  VAXOutgoingValueAssigner(CCAssignFn *AssignFn)
+      : CallLowering::OutgoingValueAssigner(AssignFn) {}
 };
 
-struct VAXCallReturnHandler : public VAXIncomingValueHandler {
-  VAXCallReturnHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI,
-                    MachineInstrBuilder &MIB)
-      : VAXIncomingValueHandler(MIRBuilder, MRI), MIB(MIB) {}
+struct VAXIncomingValueAssigner : public CallLowering::IncomingValueAssigner {
+  // For outgoing, fixed and varargs are the same
+  VAXIncomingValueAssigner(CCAssignFn *AssignFn)
+      : CallLowering::IncomingValueAssigner(AssignFn) {}
+};
+
+struct VAXIncomingValueHandler : public CallLowering::IncomingValueHandler {
+  VAXIncomingValueHandler(MachineIRBuilder &MIRBuilder,
+                           MachineRegisterInfo &MRI)
+      : CallLowering::IncomingValueHandler(MIRBuilder, MRI) {}
+
+  uint64_t StackUsed;
 
 private:
   void assignValueToReg(Register ValVReg, Register PhysReg,
                         const CCValAssign &VA) override;
 
-  MachineInstrBuilder &MIB;
-};
-
-} // end anonymous namespace;
-
-struct VAXOutgoingArgHandler : public CallLowering::OutgoingValueHandler {
-  VAXOutgoingArgHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI,
-                         MachineInstrBuilder MIB)
-      : OutgoingValueHandler(MIRBuilder, MRI), MIB(MIB),
-        DL(MIRBuilder.getMF().getDataLayout()),
-        STI(MIRBuilder.getMF().getSubtarget<VAXSubtarget>()) {}
-
-  void assignValueToReg(Register ValVReg, Register PhysReg,
-                        const CCValAssign &VA) override {
-    MIB.addUse(PhysReg, RegState::Implicit);
-    Register ExtReg = extendRegister(ValVReg, VA);
-    MIRBuilder.buildCopy(PhysReg, ExtReg);
-  }
-
   void assignValueToAddress(Register ValVReg, Register Addr, LLT MemTy,
                             const MachinePointerInfo &MPO,
-                            const CCValAssign &VA) override {
-    assert(0);
-  }
+                            const CCValAssign &VA) override;
 
   Register getStackAddress(uint64_t Size, int64_t Offset,
                            MachinePointerInfo &MPO,
-                           ISD::ArgFlagsTy Flags) override {
-    assert(0);
-    LLT p0 = LLT::pointer(0, DL.getPointerSizeInBits(0));
-    LLT SType = LLT::scalar(DL.getPointerSizeInBits(0));
-    // XXX changed need to revisit
-    Register StackReg = STI.getRegisterInfo()->getFrameRegister(MIRBuilder.getMF());
-    auto SPReg = MIRBuilder.buildCopy(p0, StackReg).getReg(0);
-    auto OffsetReg = MIRBuilder.buildConstant(SType, Offset);
-    auto AddrReg = MIRBuilder.buildPtrAdd(p0, SPReg, OffsetReg);
-    MPO = MachinePointerInfo::getStack(MIRBuilder.getMF(), Offset);
-    return AddrReg.getReg(0);
-
-  }
-  MachineInstrBuilder MIB;
-  const DataLayout &DL;
-  const VAXSubtarget &STI;
+                           ISD::ArgFlagsTy Flags) override;
 };
 
 void VAXIncomingValueHandler::assignValueToReg(Register ValVReg,
@@ -131,6 +105,23 @@ Register VAXIncomingValueHandler::getStackAddress(uint64_t Size,
   return AddrReg.getReg(0);
 }
 
+struct VAXFormalArgHandler : public VAXIncomingValueHandler {
+  VAXFormalArgHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI)
+      : VAXIncomingValueHandler(MIRBuilder, MRI) {}
+};
+
+struct VAXCallReturnHandler : public VAXIncomingValueHandler {
+  VAXCallReturnHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI,
+                    MachineInstrBuilder &MIB)
+      : VAXIncomingValueHandler(MIRBuilder, MRI), MIB(MIB) {}
+
+private:
+  void assignValueToReg(Register ValVReg, Register PhysReg,
+                        const CCValAssign &VA) override;
+
+  MachineInstrBuilder &MIB;
+};
+
 void VAXCallReturnHandler::assignValueToReg(Register ValVReg,
                                                    Register PhysReg,
                                                    const CCValAssign &VA) {
@@ -139,9 +130,44 @@ void VAXCallReturnHandler::assignValueToReg(Register ValVReg,
   MIRBuilder.buildCopy(PhysReg, ExtReg);
 }
 
+struct VAXOutgoingArgHandler : public CallLowering::OutgoingValueHandler {
+  VAXOutgoingArgHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI,
+                         MachineInstrBuilder MIB)
+      : OutgoingValueHandler(MIRBuilder, MRI), MIB(MIB),
+        DL(MIRBuilder.getMF().getDataLayout()),
+        STI(MIRBuilder.getMF().getSubtarget<VAXSubtarget>()) {}
+
+  void assignValueToReg(Register ValVReg, Register PhysReg,
+                        const CCValAssign &VA) override {
+    MIB.addUse(PhysReg, RegState::Implicit);
+    Register ExtReg = extendRegister(ValVReg, VA);
+    MIRBuilder.buildCopy(PhysReg, ExtReg);
+  }
+
+  void assignValueToAddress(Register ValVReg, Register Addr, LLT MemTy,
+                            const MachinePointerInfo &MPO,
+                            const CCValAssign &VA) override {
+    LLVM_DEBUG(dbgs() << "ARG "<< VA.getValNo()  << " type " << VA.getLocMemOffset() << " extension " << VA.getLocInfo() << "\n");
+
+    MIRBuilder.buildInstr(VAX::pushl)
+        .addReg(ValVReg)
+        .setMIFlag(MachineInstr::FrameSetup);
+  }
+
+  Register getStackAddress(uint64_t Size, int64_t Offset,
+                           MachinePointerInfo &MPO,
+                           ISD::ArgFlagsTy Flags) override {
+    return Register();
+  }
+  MachineInstrBuilder MIB;
+  const DataLayout &DL;
+  const VAXSubtarget &STI;
+};
+
+} // end anonymous namespace;
+
 VAXCallLowering::VAXCallLowering(const VAXTargetLowering &TLI)
     : CallLowering(&TLI) {}
-
 
 bool VAXCallLowering::lowerReturn(MachineIRBuilder &MIRBuilder,
                                   const Value *Val, ArrayRef<Register> VRegs,
@@ -203,7 +229,6 @@ bool VAXCallLowering::lowerFormalArguments(MachineIRBuilder &MIRBuilder,
 
 bool VAXCallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
                                 CallLoweringInfo &Info) const {
-#if 0
   MachineFunction &MF = MIRBuilder.getMF();
   const Function &F = MF.getFunction();
   MachineRegisterInfo &MRI = MF.getRegInfo();
@@ -211,42 +236,63 @@ bool VAXCallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
   const VAXSubtarget &STI = MF.getSubtarget<VAXSubtarget>();
   const TargetInstrInfo &TII = *STI.getInstrInfo();
   const VAXRegisterInfo *TRI = STI.getRegisterInfo();
+  auto &TLI = *getTLI<VAXTargetLowering>();
 
+  // Pending address mode work, only supporting passing function name in a
+  // register
+
+  Register CallReg;
+  if (Info.Callee.isGlobal()) {
+    const GlobalValue *GV = Info.Callee.getGlobal();
+    auto Ptr = MIRBuilder.buildGlobalValue(
+        LLT::pointer(GV->getAddressSpace(), 32), GV);
+    CallReg = Ptr.getReg(0);
+  } else if (Info.Callee.isReg())
+    CallReg = Info.Callee.getReg(); // Already materialized
+  else
+    llvm_unreachable("unknown calls source");
+
+  // do we need to constrain register?
   unsigned CallOpc = VAX::calls;
 
   auto MIB = MIRBuilder.buildInstrNoInsert(CallOpc)
-                 .add(Info.Callee)
-                           .addRegMask(TRI->getCallPreservedMask(MF, Info.CallConv));
+                 .addReg(CallReg)
+                 .addRegMask(TRI->getCallPreservedMask(MF, Info.CallConv));
 
   SmallVector<ArgInfo, 8> SplitArgs;
   for (const auto &OrigArg : Info.OrigArgs) {
     splitToValueTypes(OrigArg, SplitArgs, DL, Info.CallConv);
   }
+  // Do the actual argument marshalling.
+  CCAssignFn *AssignFn =
+      TLI.getCCAssignFn(F.getCallingConv(), false, F.isVarArg());
+  VAXOutgoingValueAssigner Assigner(AssignFn);
+  VAXOutgoingArgHandler Handler(MIRBuilder, MRI, MIB);
+  SmallVector<CCValAssign, 16> ArgLocs;
+  CCState CCInfo(Info.CallConv,
+                 Info.IsVarArg,
+                 MF,
+                 ArgLocs,
+                 MF.getFunction().getContext());
+
+  SmallVector<ArgInfo, 8> ReversedArgs(SplitArgs.rbegin(), SplitArgs.rend());
+  if (!determineAssignments(Assigner, ReversedArgs, CCInfo) ||
+      !handleAssignments(Handler, ReversedArgs, CCInfo, ArgLocs, MIRBuilder))
+      return false;
 
   MIB.addImm(SplitArgs.size());
-
-  // Do the actual argument marshalling.
-  VAXOutgoingValueAssigner Assigner(CC_VAX);
-  VAXOutgoingValueHandler Handler(MIRBuilder, MRI, MIB);
-  if (!determineAndHandleAssignments(Handler, Assigner, SplitArgs, MIRBuilder,
-                                     Info.CallConv, Info.IsVarArg))
-    return false;
-
-  LLVM_DEBUG(dbgs() << "split to value");
 
   // Now we can add the actual call instruction to the correct basic block.
   MIRBuilder.insertInstr(MIB);
 
+#if 0
   if (Info.Callee.isReg())
     MIB->getOperand(1).setReg(constrainOperandRegClass(
         MF, *TRI, MRI, *MF.getSubtarget().getInstrInfo(),
         *MF.getSubtarget().getRegBankInfo(), *MIB, MIB->getDesc(), Info.Callee,
         0));
-
-  return true;
-#else
-  return false;
 #endif
+  return true;
 }
 
 #endif // LLVM_LIB_TARGET_MVAX_GLSEL_VAXCALLLOWERING_H

@@ -37,26 +37,6 @@ public:
                  CallLoweringInfo &Info) const override;
 };
 
-struct VAXIncomingValueHandler : public CallLowering::IncomingValueHandler {
-  VAXIncomingValueHandler(MachineIRBuilder &MIRBuilder,
-                           MachineRegisterInfo &MRI)
-      : CallLowering::IncomingValueHandler(MIRBuilder, MRI) {}
-
-  uint64_t StackUsed;
-
-private:
-  void assignValueToReg(Register ValVReg, Register PhysReg,
-                        const CCValAssign &VA) override;
-
-  void assignValueToAddress(Register ValVReg, Register Addr, LLT MemTy,
-                            const MachinePointerInfo &MPO,
-                            const CCValAssign &VA) override;
-
-  Register getStackAddress(uint64_t Size, int64_t Offset,
-                           MachinePointerInfo &MPO,
-                           ISD::ArgFlagsTy Flags) override;
-};
-
 } // namespace llvm
 
 #endif
