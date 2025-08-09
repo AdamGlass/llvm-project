@@ -147,12 +147,15 @@ struct VAXOutgoingArgHandler : public CallLowering::OutgoingValueHandler {
   void assignValueToAddress(Register ValVReg, Register Addr, LLT MemTy,
                             const MachinePointerInfo &MPO,
                             const CCValAssign &VA) override {
-    LLVM_DEBUG(dbgs() << "ARG "<< VA.getValNo()  << " type " << VA.getLocMemOffset() << " extension " << VA.getLocInfo() << "\n");
+
+    // NOTYET i64, i128 - use pseudo ops or directly generate MOVO/MOVQ
 
     MIRBuilder.buildInstr(VAX::pushl)
         .addReg(ValVReg)
         .setMIFlag(MachineInstr::FrameSetup);
   }
+
+
 
   Register getStackAddress(uint64_t Size, int64_t Offset,
                            MachinePointerInfo &MPO,
@@ -234,10 +237,9 @@ bool VAXCallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
   MachineRegisterInfo &MRI = MF.getRegInfo();
   const DataLayout &DL = F.getDataLayout();
   const VAXSubtarget &STI = MF.getSubtarget<VAXSubtarget>();
-  const TargetInstrInfo &TII = *STI.getInstrInfo();
   const VAXRegisterInfo *TRI = STI.getRegisterInfo();
   auto &TLI = *getTLI<VAXTargetLowering>();
-
+  auto &Ctx = MF.getFunction().getContext();
   // Pending address mode work, only supporting passing function name in a
   // register
 
@@ -273,7 +275,7 @@ bool VAXCallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
                  Info.IsVarArg,
                  MF,
                  ArgLocs,
-                 MF.getFunction().getContext());
+                 Ctx);
 
   SmallVector<ArgInfo, 8> ReversedArgs(SplitArgs.rbegin(), SplitArgs.rend());
   if (!determineAssignments(Assigner, ReversedArgs, CCInfo) ||
