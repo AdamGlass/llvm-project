@@ -208,7 +208,7 @@ def cvtbl: InstVAX<0x96,
 
 // MOV - Move
 // XXX for MOVQ VxSize64
-foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize128] in {
+foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize64, VxSize128] in {
   def mov # SIZE.Id : InstVAX<!add(0x90, SIZE.OpOffset),
                           (outs SIZE.DstRC:$dst),
                           (ins SIZE.SrcRC:$src),
@@ -426,6 +426,12 @@ let hasSideEffects = 1, Uses = [SP], Defs = [SP], mayStore = 1 in {
                      (ins GPR:$src),
                      "pushl $src",
                      []>;
+  foreach SIZE = [VxSize64, VxSize128] in {
+    def push # SIZE.Id : PseudoInstVAX<(outs),
+                                       (ins SIZE.SrcRC:$src),
+                                       "push" # SIZE.Id # " $src",
+                                       []>;
+  }
 }
 
 // ROTL - Rotate Long
@@ -612,3 +618,5 @@ def PROCENTRYMASK : PseudoInstVAX<(outs),
 def : Pat<(i8 imm:$val), (movb imm:$val)>;
 def : Pat<(i16 imm:$val), (movw imm:$val)>;
 def : Pat<(i32 imm:$val), (movl imm:$val)>;
+def : Pat<(i64 imm:$val), (movq imm:$val)>;
+def : Pat<(i128 imm:$val), (movo imm:$val)>;

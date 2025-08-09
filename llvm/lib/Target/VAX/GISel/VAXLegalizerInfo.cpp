@@ -69,7 +69,7 @@ VAXLegalizerInfo::VAXLegalizerInfo(const VAXSubtarget &ST) {
 
   // hacked
   getActionDefinitionsBuilder(G_CONSTANT)
-      .legalFor({p0, s8, s16, s32})
+      .legalFor({p0, s8, s16, s32, s64, s128})
       .widenScalarToNextPow2(0);
   //      .clampScalar(0, s8, 32);
 
