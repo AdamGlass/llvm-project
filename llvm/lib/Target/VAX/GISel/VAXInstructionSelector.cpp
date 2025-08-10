@@ -43,6 +43,8 @@ private:
 
   bool selectFrameIndex(MachineInstr &I, MachineRegisterInfo &MRI,
                         MachineFunction &MF) const;
+  bool selectGlobalValue(MachineInstr &I, MachineRegisterInfo &MRI,
+                        MachineFunction &MF) const;
 
   const VAXInstrInfo &TII;
   const VAXRegisterInfo &TRI;
@@ -78,23 +80,26 @@ VAXInstructionSelector::VAXInstructionSelector(const VAXTargetMachine &TM,
 
 bool VAXInstructionSelector::select(MachineInstr &I) {
 
+  LLVM_DEBUG(dbgs() << "select("<< I.getOpcode() << ")\n");
   if (!isPreISelGenericOpcode(I.getOpcode()))
     return true;
+
   if (selectImpl(I, *CoverageInfo))
     return true;
-
-  LLVM_DEBUG(dbgs() << "Got to end of select..aww\n");
 
   MachineBasicBlock &MBB = *I.getParent();
   MachineFunction &MF = *MBB.getParent();
   MachineRegisterInfo &MRI = MF.getRegInfo();
 
+  LLVM_DEBUG(dbgs() << "VAX special processing " << I.getOpcode() << "\n");
   switch (I.getOpcode()) {
   default:
     return false;
   case TargetOpcode::G_FRAME_INDEX:
     // case TargetOpcode::G_GEP:
     return selectFrameIndex(I, MRI, MF);
+  case TargetOpcode::G_GLOBAL_VALUE:
+    return selectGlobalValue(I, MRI, MF);
   }
 
   return false;
@@ -105,7 +110,6 @@ bool VAXInstructionSelector::selectFrameIndex(MachineInstr &I,
                                               MachineRegisterInfo &MRI,
                                               MachineFunction &MF) const {
   const Register DefReg = I.getOperand(0).getReg();
-  LLT Ty = MRI.getType(DefReg);
 
   // Use LEA to calculate frame index and GEP
   I.setDesc(TII.get(VAX::moval));
@@ -114,6 +118,30 @@ bool VAXInstructionSelector::selectFrameIndex(MachineInstr &I,
   I.addOperand(MachineOperand::CreateImm(0));
 
   return constrainSelectedInstRegOperands(I, TII, TRI, RBI);
+}
+
+bool VAXInstructionSelector::selectGlobalValue(MachineInstr &MI,
+                                              MachineRegisterInfo &MRI,
+                                              MachineFunction &MF) const {
+  assert(MI.getOpcode() == TargetOpcode::G_GLOBAL_VALUE);
+
+  Register DstReg = MI.getOperand(0).getReg();
+  const GlobalValue *GV = MI.getOperand(1).getGlobal();
+
+  MachineIRBuilder MIB(MI);
+
+  MachineInstr &NewMI =
+      *MIB.buildInstr(VAX::movax)
+      .addDef(DstReg)
+      .addGlobalAddress(GV)
+      .getInstr();
+
+  if (!constrainSelectedInstRegOperands(NewMI, TII, TRI, RBI))
+    return false;
+  else {
+    MI.eraseFromParent();
+    return true;
+  }
 }
 namespace llvm {
 InstructionSelector *

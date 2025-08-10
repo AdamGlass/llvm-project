@@ -48,7 +48,8 @@ VAXLegalizerInfo::VAXLegalizerInfo(const VAXSubtarget &ST) {
   getActionDefinitionsBuilder({G_ADD, G_SUB, G_MUL, G_UDIV, G_XOR})
       .legalFor(SimpleScalarList);
 
-  getActionDefinitionsBuilder({G_FRAME_INDEX, G_GLOBAL_VALUE}).legalFor({p0});
+  getActionDefinitionsBuilder(G_FRAME_INDEX).legalFor({p0});
+  getActionDefinitionsBuilder(G_GLOBAL_VALUE).legalFor({p0});
 
   getActionDefinitionsBuilder({G_STORE, G_LOAD})
       .legalForTypesWithMemDesc({{s8, p0, s8, 8},

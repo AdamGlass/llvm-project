@@ -93,6 +93,7 @@ VAXRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
   }
 
   case G_CONSTANT:
+  case G_GLOBAL_VALUE:
   case G_FRAME_INDEX:
     OperandsMapping =
         getOperandsMapping({&VAX::ValueMappings[VAX::GPR3OpsIdx], nullptr});

@@ -31,6 +31,8 @@ def VAXRegMask : SDNode<"VAXISD::PROCENTRYMASK", SDTUnaryOp,
 // Difference between operand<32>, and operand<iptr>
 //
 
+def imm8: Operand<i32>, ImmLeaf<i32, [{ return Imm >= 0 && Imm < 256; }]>;
+def imm32: Operand<i32>;
 
 // Recognizes signed integers between 1 and 63 (inclusive), fitting in 7 bits
 // def posSImm7 : AsmOperandClass<"posSImm7", "isSImm<7>() && ValueIs>=0">;
@@ -216,15 +218,23 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize64, VxSize128] in {
                           [(set SIZE.VT:$dst, (load SIZE.SrcRC:$src))]>;
 }
 
-def imm8: Operand<i32>, ImmLeaf<i32, [{ return Imm >= 0 && Imm < 256; }]>;
 
 foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize128] in {
   def mova # SIZE.Id : InstVAX<!add(0x9e, SIZE.OpOffset),
                           (outs SIZE.DstRC:$dst),
-                          (ins GPR:$base, imm8:$offset),
+                          (ins GPR:$base, imm32:$offset),
                           !strconcat("mova" # SIZE.Id, " [$base + $offset], $dst"),
                           []>;
 }
+
+// NOTE: Until we have real addressing modes
+
+def movax : PseudoInstVAX<
+                          (outs GPRnoPC:$dst),
+                          (ins imm32:$offset),
+                          "movax $offset, $dst",
+                          []>;
+
 
 foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   // MNEG - Move Negated
@@ -414,9 +424,6 @@ let Uses = [PSL] in {
 // CMP - Compare
 // EDIV - Extended Divide
 // EMUL - Extended Multiply
-
-
-def imm32: Operand<i32>;
 
 
 // PUSHL - Push Long
