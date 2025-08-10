@@ -68,13 +68,32 @@ void VAXFrameLowering::emitPrologue(MachineFunction &MF,
     EntryMask |= (1 << Reg);
   }
 
+  //
+  // Emit mask that causes CALLS instruction to save callee saved registers.
+  //
+
   BuildMI(MBB, MBBI, DL, TII.get(VAX::PROCENTRYMASK))
       .addImm(EntryMask)
       .setMIFlags(MachineInstr::FrameSetup);
 
   LLVM_DEBUG(dbgs() << "stack size: " << StackSize << "\n");
   LLVM_DEBUG(dbgs() << "entry mask: " << EntryMask << "\n");
+
 }
 
 void VAXFrameLowering::emitEpilogue(MachineFunction &MF,
                                     MachineBasicBlock &MBB) const {}
+
+bool VAXFrameLowering::spillCalleeSavedRegisters(MachineBasicBlock &MBB,
+                                                 MachineBasicBlock::iterator MI,
+                                                 ArrayRef<CalleeSavedInfo> CSI,
+                                                 const TargetRegisterInfo *TRI)  const {
+  return true;
+}
+
+bool VAXFrameLowering::restoreCalleeSavedRegisters(MachineBasicBlock &MBB,
+                                                   MachineBasicBlock::iterator MI,
+                                                   MutableArrayRef<CalleeSavedInfo> CSI,
+                                                   const TargetRegisterInfo *TRI) const {
+  return true;
+}
