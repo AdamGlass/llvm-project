@@ -56,7 +56,7 @@ class VAXAsmPrinter : public AsmPrinter {
 public:
   explicit VAXAsmPrinter(TargetMachine &TM,
                          std::unique_ptr<MCStreamer> Streamer)
-      : AsmPrinter(TM, std::move(Streamer)), MCInstLowering(*this) {}
+      : AsmPrinter(TM, std::move(Streamer)), MCInstLowering(OutContext, *this) {}
 
   StringRef getPassName() const override { return "VAX Assembly Printer"; }
 

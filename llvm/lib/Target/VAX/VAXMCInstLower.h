@@ -22,11 +22,10 @@ namespace llvm {
 /// This class is used to lower an MachineInstr into an MCInst.
 class LLVM_LIBRARY_VISIBILITY VAXMCInstLower {
   typedef MachineOperand::MachineOperandType MachineOperandType;
-  MCContext *Ctx;
+  MCContext &Ctx;
   AsmPrinter &Printer;
 public:
-  VAXMCInstLower(class AsmPrinter &asmprinter);
-  void Initialize(MCContext *C);
+  VAXMCInstLower(MCContext &ctx, AsmPrinter &asmprinter);
   void Lower(const MachineInstr *MI, MCInst &OutMI) const;
   MCOperand LowerOperand(const MachineOperand& MO) const;
 

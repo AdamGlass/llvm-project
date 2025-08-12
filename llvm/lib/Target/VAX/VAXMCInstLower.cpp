@@ -23,15 +23,13 @@
 
 using namespace llvm;
 
-VAXMCInstLower::VAXMCInstLower(class AsmPrinter &asmprinter)
-    : Printer(asmprinter) {}
-
-void VAXMCInstLower::Initialize(MCContext *C) { Ctx = C; }
+VAXMCInstLower::VAXMCInstLower(MCContext &ctx, AsmPrinter &asmprinter)
+    : Ctx(ctx), Printer(asmprinter) {}
 
 MCOperand VAXMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
                                              const MCSymbol *Symbol) const {
 
-  const MCSymbolRefExpr *MCSym = MCSymbolRefExpr::create(Symbol, *Ctx);
+  const MCSymbolRefExpr *MCSym = MCSymbolRefExpr::create(Symbol, Ctx);
   return MCOperand::createExpr(MCSym);
 
 #if 0
