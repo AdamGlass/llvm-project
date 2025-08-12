@@ -29,40 +29,13 @@ VAXMCInstLower::VAXMCInstLower(class AsmPrinter &asmprinter)
 void VAXMCInstLower::Initialize(MCContext *C) { Ctx = C; }
 
 MCOperand VAXMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
-                                               MachineOperandType MOTy,
-                                               unsigned Offset) const {
-  const MCSymbol *Symbol;
-
-  switch (MOTy) {
-    case MachineOperand::MO_MachineBasicBlock:
-      Symbol = MO.getMBB()->getSymbol();
-      break;
-    case MachineOperand::MO_GlobalAddress:
-      Symbol = Printer.getSymbol(MO.getGlobal());
-      Offset += MO.getOffset();
-      break;
-    case MachineOperand::MO_BlockAddress:
-      Symbol = Printer.GetBlockAddressSymbol(MO.getBlockAddress());
-      Offset += MO.getOffset();
-      break;
-    case MachineOperand::MO_ExternalSymbol:
-      Symbol = Printer.GetExternalSymbolSymbol(MO.getSymbolName());
-      Offset += MO.getOffset();
-      break;
-    case MachineOperand::MO_JumpTableIndex:
-      Symbol = Printer.GetJTISymbol(MO.getIndex());
-      break;
-    case MachineOperand::MO_ConstantPoolIndex:
-      Symbol = Printer.GetCPISymbol(MO.getIndex());
-      Offset += MO.getOffset();
-      break;
-    default:
-      llvm_unreachable("<unknown operand type>");
-  }
+                                             const MCSymbol *Symbol) const {
 
   const MCSymbolRefExpr *MCSym = MCSymbolRefExpr::create(Symbol, *Ctx);
+  return MCOperand::createExpr(MCSym);
+
+#if 0
   if (!Offset)
-    return MCOperand::createExpr(MCSym);
 
   // Assume offset is never negative.
   assert(Offset > 0);
@@ -70,32 +43,39 @@ MCOperand VAXMCInstLower::LowerSymbolOperand(const MachineOperand &MO,
   const MCConstantExpr *OffsetExpr =  MCConstantExpr::create(Offset, *Ctx);
   const MCBinaryExpr *Add = MCBinaryExpr::createAdd(MCSym, OffsetExpr, *Ctx);
   return MCOperand::createExpr(Add);
+#endif
 }
 
-MCOperand VAXMCInstLower::LowerOperand(const MachineOperand &MO,
-                                         unsigned offset) const {
+MCOperand VAXMCInstLower::LowerOperand(const MachineOperand &MO) const {
   MachineOperandType MOTy = MO.getType();
 
   switch (MOTy) {
-    default: llvm_unreachable("unknown operand type");
-    case MachineOperand::MO_Register:
-      // Ignore all implicit register operands.
-      if (MO.isImplicit()) break;
-      return MCOperand::createReg(MO.getReg());
-    case MachineOperand::MO_Immediate:
-      return MCOperand::createImm(MO.getImm() + offset);
-    case MachineOperand::MO_MachineBasicBlock:
-    case MachineOperand::MO_GlobalAddress:
-    case MachineOperand::MO_ExternalSymbol:
-    case MachineOperand::MO_JumpTableIndex:
-    case MachineOperand::MO_ConstantPoolIndex:
-    case MachineOperand::MO_BlockAddress:
-      return LowerSymbolOperand(MO, MOTy, offset);
-    case MachineOperand::MO_RegisterMask:
-      break;
+  default: llvm_unreachable("unknown operand type");
+  case MachineOperand::MO_Register:
+    // Ignore all implicit register operands.
+    if (MO.isImplicit())
+      return MCOperand();
+    return MCOperand::createReg(MO.getReg());
+  case MachineOperand::MO_Immediate:
+    return MCOperand::createImm(MO.getImm());
+  case MachineOperand::MO_GlobalAddress:
+    return LowerSymbolOperand(MO, Printer.getSymbolPreferLocal(*MO.getGlobal()));
+  case MachineOperand::MO_ExternalSymbol:
+    return LowerSymbolOperand(MO, Printer.GetExternalSymbolSymbol(MO.getSymbolName()));
+  case MachineOperand::MO_MachineBasicBlock:
+    return LowerSymbolOperand(MO, MO.getMBB()->getSymbol());
+  case MachineOperand::MO_JumpTableIndex:
+    return LowerSymbolOperand(MO, Printer.GetJTISymbol(MO.getIndex()));
+  case MachineOperand::MO_ConstantPoolIndex:
+    return LowerSymbolOperand(MO, Printer.GetCPISymbol(MO.getIndex()));
+  case MachineOperand::MO_BlockAddress:
+    return LowerSymbolOperand(
+        MO,
+        Printer.GetBlockAddressSymbol(MO.getBlockAddress()));
+  case MachineOperand::MO_RegisterMask:
+    // Ignore call clobbers
+    return MCOperand();
   }
-
-  return MCOperand();
 }
 
 void VAXMCInstLower::Lower(const MachineInstr *MI, MCInst &OutMI) const {
