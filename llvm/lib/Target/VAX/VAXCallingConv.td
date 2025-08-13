@@ -32,7 +32,7 @@ def CC_VAX : CallingConv<[
   //  CCIfType<[i64],  CCAssignToStack<8, 4>>,
 
   // Otherwise they are assigned to the stack in 4-byte aligned units.
-  CCIfType<[i32],  CCAssignToStack<4, 4>>,
+  CCIfType<[i32, f32],  CCAssignToStack<4, 4>>,
 ]>;
 
 // VAX 32-bit C return-value convention.

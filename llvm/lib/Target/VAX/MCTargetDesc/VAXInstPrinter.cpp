@@ -86,6 +86,13 @@ void VAXInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
     return;
   }
 
+  if (Op.isDFPImm()) {
+    uint64_t Bits = Op.getDFPImm();
+    double Val = bit_cast<double>(Bits);
+
+    O << '$' << Val;
+    return;
+  }
   assert(Op.isExpr() && "unknown operand kind in printOperand");
   printExpr(Op.getExpr(), &MAI, O);
 }

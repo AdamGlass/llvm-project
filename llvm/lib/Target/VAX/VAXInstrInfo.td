@@ -545,6 +545,17 @@ foreach SIZE = [VxSizeF32, VxSizeD64, VxSizeG64, VxSizeH128] in {
   defm sub: MInstVAX23<0x42, fsub, SIZE>;
 }
 
+// BUG: Ambiguity with VxSizeH128
+foreach SIZE = [VxSizeF32, VxSizeD64, VxSizeG64] in {
+  def mov # SIZE.Id : InstVAX<!add(0x50, SIZE.OpOffset),
+                          (outs SIZE.DstRC:$dst),
+                          (ins SIZE.SrcRC:$src),
+                          !strconcat("mov" # SIZE.Id, " $src, $dst"),
+                          [(set SIZE.VT:$dst, SIZE.SrcRC:$src)]>;
+}
+
+
+
 // XXX not sure how to resolve ambiguity with integr clr
 // CLR - Clear
 // CMP - Compare
@@ -625,5 +636,6 @@ def PROCENTRYMASK : PseudoInstVAX<(outs),
 def : Pat<(i8 imm:$val), (movb imm:$val)>;
 def : Pat<(i16 imm:$val), (movw imm:$val)>;
 def : Pat<(i32 imm:$val), (movl imm:$val)>;
+def : Pat<(f32 fpimm:$val), (movf fpimm:$val)>;
 def : Pat<(i64 imm:$val), (movq imm:$val)>;
 def : Pat<(i128 imm:$val), (movo imm:$val)>;

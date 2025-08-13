@@ -12,10 +12,17 @@
 ///
 //===----------------------------------------------------------------------===//
 #include "VAXMCInstLower.h"
+
 #include "llvm/CodeGen/AsmPrinter.h"
 #include "llvm/CodeGen/MachineFunction.h"
 #include "llvm/CodeGen/MachineInstr.h"
 #include "llvm/CodeGen/MachineOperand.h"
+#include "llvm/ADT/APFloat.h"
+#include "llvm/ADT/APInt.h"
+#include "llvm/ADT/APSInt.h"
+#include "llvm/ADT/DenseMap.h"
+#include "llvm/ADT/SmallVector.h"
+#include "llvm/IR/Constants.h"
 #include "llvm/IR/Mangler.h"
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCExpr.h"
@@ -48,7 +55,9 @@ MCOperand VAXMCInstLower::LowerOperand(const MachineOperand &MO) const {
   MachineOperandType MOTy = MO.getType();
 
   switch (MOTy) {
-  default: llvm_unreachable("unknown operand type");
+  default:
+    MO.dump();
+    llvm_unreachable("unknown operand type");
   case MachineOperand::MO_Register:
     // Ignore all implicit register operands.
     if (MO.isImplicit())
@@ -56,6 +65,10 @@ MCOperand VAXMCInstLower::LowerOperand(const MachineOperand &MO) const {
     return MCOperand::createReg(MO.getReg());
   case MachineOperand::MO_Immediate:
     return MCOperand::createImm(MO.getImm());
+  case MachineOperand::MO_FPImmediate: {
+    APFloat Val = MO.getFPImm()->getValueAPF();
+    return MCOperand::createDFPImm(bit_cast<uint64_t>(Val.convertToDouble()));
+  }
   case MachineOperand::MO_GlobalAddress:
     return LowerSymbolOperand(MO, Printer.getSymbolPreferLocal(*MO.getGlobal()));
   case MachineOperand::MO_ExternalSymbol:

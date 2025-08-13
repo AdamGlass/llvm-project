@@ -74,6 +74,9 @@ VAXLegalizerInfo::VAXLegalizerInfo(const VAXSubtarget &ST) {
       .widenScalarToNextPow2(0);
   //      .clampScalar(0, s8, 32);
 
+  getActionDefinitionsBuilder(G_FCONSTANT)
+      .legalFor({s32});
+
   // N.B. there is adwc/subwc but not sure how to exploit
   // N.B. there is emul/ediv but not sure how to exploit
 
