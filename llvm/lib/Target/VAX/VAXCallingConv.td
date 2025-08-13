@@ -25,11 +25,11 @@ def CC_VAX : CallingConv<[
   /// Handles byval parameters.  What sets R1?
   CCIfByVal<CCPassByVal<4, 4>>,
 
-  // NOTYET
   // Otherwise they are assigned to the stack in 4-byte aligned units.
-  //   CCIfType<[i128],  CCAssignToStack<16, 4>>,
+  CCIfType<[i128,f128],  CCAssignToStack<16, 4>>,
+
   // Otherwise they are assigned to the stack in 4-byte aligned units.
-  //  CCIfType<[i64],  CCAssignToStack<8, 4>>,
+  CCIfType<[i64,f64],  CCAssignToStack<8, 4>>,
 
   // Otherwise they are assigned to the stack in 4-byte aligned units.
   CCIfType<[i32, f32],  CCAssignToStack<4, 4>>,

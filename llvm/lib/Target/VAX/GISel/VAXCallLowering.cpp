@@ -130,6 +130,23 @@ void VAXCallReturnHandler::assignValueToReg(Register ValVReg,
   MIRBuilder.buildCopy(PhysReg, ExtReg);
 }
 
+static void ValAssignDump(const CCValAssign &VA) {
+  llvm::errs() << "CCValAssign:\n";
+  llvm::errs() << "  ValNo      : " << VA.getValNo() << "\n";
+  llvm::errs() << "  ValVT      : " << VA.getValVT() << "\n";
+  llvm::errs() << "  LocVT      : " << VA.getLocVT() << "\n";
+  llvm::errs() << "  LocInfo    : " << VA.getLocInfo() << "\n";
+  llvm::errs() << "  IsRegLoc   : " << VA.isRegLoc() << "\n";
+  llvm::errs() << "  IsMemLoc   : " << VA.isMemLoc() << "\n";
+
+  if (VA.isRegLoc())
+    llvm::errs() << "  Reg        : " << VA.getLocReg() << "\n";
+  else if (VA.isMemLoc())
+    llvm::errs() << "  StackOffset: " << VA.getLocMemOffset() << "\n";
+
+  llvm::errs() << "  NeedsCustom: " << VA.needsCustom() << "\n";
+}
+
 struct VAXOutgoingArgHandler : public CallLowering::OutgoingValueHandler {
   VAXOutgoingArgHandler(MachineIRBuilder &MIRBuilder, MachineRegisterInfo &MRI,
                          MachineInstrBuilder MIB)
@@ -148,14 +165,25 @@ struct VAXOutgoingArgHandler : public CallLowering::OutgoingValueHandler {
                             const MachinePointerInfo &MPO,
                             const CCValAssign &VA) override {
 
-    // NOTYET i64, i128 - use pseudo ops or directly generate MOVO/MOVQ
+    EVT LocVT = VA.getLocVT();
 
-    MIRBuilder.buildInstr(VAX::pushl)
-        .addReg(ValVReg)
-        .setMIFlag(MachineInstr::FrameSetup);
+    // ValAssignDump(VA);
+
+    if ((LocVT == MVT::i32) || (LocVT == MVT::f32))
+      MIRBuilder.buildInstr(VAX::pushl)
+          .addReg(ValVReg)
+          .setMIFlag(MachineInstr::FrameSetup);
+    else if ((LocVT == MVT::i64) || (LocVT == MVT::f64))
+      MIRBuilder.buildInstr(VAX::pushq)
+          .addReg(ValVReg)
+          .setMIFlag(MachineInstr::FrameSetup);
+    else if ((LocVT == MVT::i128) || (LocVT == MVT::f128))
+      MIRBuilder.buildInstr(VAX::pusho)
+          .addReg(ValVReg)
+          .setMIFlag(MachineInstr::FrameSetup);
+    else
+      llvm_unreachable("unknown push operation");
   }
-
-
 
   Register getStackAddress(uint64_t Size, int64_t Offset,
                            MachinePointerInfo &MPO,
@@ -265,6 +293,7 @@ bool VAXCallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
   for (const auto &OrigArg : Info.OrigArgs) {
     splitToValueTypes(OrigArg, SplitArgs, DL, Info.CallConv);
   }
+
   // Do the actual argument marshalling.
   CCAssignFn *AssignFn =
       TLI.getCCAssignFn(F.getCallingConv(), false, F.isVarArg());
