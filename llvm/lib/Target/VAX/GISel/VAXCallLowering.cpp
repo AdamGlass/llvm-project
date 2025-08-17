@@ -285,9 +285,7 @@ bool VAXCallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
   // do we need to constrain register?
   unsigned CallOpc = VAX::calls;
 
-  auto MIB = MIRBuilder.buildInstrNoInsert(CallOpc)
-                 .addReg(CallReg)
-                 .addRegMask(TRI->getCallPreservedMask(MF, Info.CallConv));
+  auto MIB = MIRBuilder.buildInstrNoInsert(CallOpc);
 
   SmallVector<ArgInfo, 8> SplitArgs;
   for (const auto &OrigArg : Info.OrigArgs) {
@@ -306,12 +304,14 @@ bool VAXCallLowering::lowerCall(MachineIRBuilder &MIRBuilder,
                  ArgLocs,
                  Ctx);
 
+  MIB.addImm(SplitArgs.size())
+      .addReg(CallReg)
+      .addRegMask(TRI->getCallPreservedMask(MF, Info.CallConv));
+
   SmallVector<ArgInfo, 8> ReversedArgs(SplitArgs.rbegin(), SplitArgs.rend());
   if (!determineAssignments(Assigner, ReversedArgs, CCInfo) ||
       !handleAssignments(Handler, ReversedArgs, CCInfo, ArgLocs, MIRBuilder))
       return false;
-
-  MIB.addImm(SplitArgs.size());
 
   // Now we can add the actual call instruction to the correct basic block.
   MIRBuilder.insertInstr(MIB);
