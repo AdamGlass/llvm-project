@@ -37,9 +37,15 @@ def CC_VAX : CallingConv<[
 
 // VAX 32-bit C return-value convention.
 def RetCC_VAX : CallingConv<[
+  CCIfType<[i8, i16], CCPromoteToType<i32>>,
+  CCIfType<[i32, f32], CCAssignToReg<[R0]>>,
+
+  // NOTYET
   // Specify two registers to allow returning 64-bit results that have already
   // been lowered to 2 32-bit values.
-  CCIfType<[i32], CCAssignToReg<[R0, R1]>>
+  //  CCIfType<[i64], CCAssignToReg<[R0, R1]>>
+  // Specify register tuple
+  //  CCIfType<[i64], CCAssignToRegTuple<["R0", "R1"]>>
 ]>;
 
 def CSR_VAX : CalleeSavedRegs<(add (sequence "R%u", 2, 11), AP, FP, SP)>;
