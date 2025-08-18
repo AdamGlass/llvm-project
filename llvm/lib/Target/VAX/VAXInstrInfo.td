@@ -216,6 +216,12 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize64, VxSize128] in {
                           (ins SIZE.SrcRC:$src),
                           !strconcat("mov" # SIZE.Id, " $src, $dst"),
                           [(set SIZE.VT:$dst, (load SIZE.SrcRC:$src))]>;
+
+  def movs # SIZE.Id : PseudoInstVAX<
+                          (outs),
+                          (ins SIZE.SrcRC:$val, GPR:$addr),
+                          !strconcat("movs" # SIZE.Id, " $val, $addr"),
+                          [(store SIZE.SrcRC:$val, GPR:$addr)]>;
 }
 
 
