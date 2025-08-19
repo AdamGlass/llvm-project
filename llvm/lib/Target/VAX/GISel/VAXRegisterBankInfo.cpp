@@ -86,6 +86,9 @@ VAXRegisterBankInfo::getInstrMapping(const MachineInstr &MI) const {
   case G_ROTL:
 
 
+  case G_TRUNC:
+  case G_ANYEXT:
+
   case G_LOAD:
   case G_STORE: {
     OperandsMapping = &VAX::ValueMappings[VAX::GPR3OpsIdx];

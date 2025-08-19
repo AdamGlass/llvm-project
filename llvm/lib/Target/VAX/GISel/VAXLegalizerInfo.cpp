@@ -77,6 +77,9 @@ VAXLegalizerInfo::VAXLegalizerInfo(const VAXSubtarget &ST) {
   getActionDefinitionsBuilder(G_FCONSTANT)
       .legalFor({s32});
 
+  getActionDefinitionsBuilder(G_ANYEXT)
+      .legalFor({{s32, s8}});
+
   // N.B. there is adwc/subwc but not sure how to exploit
   // N.B. there is emul/ediv but not sure how to exploit
 

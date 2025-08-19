@@ -46,6 +46,15 @@ private:
   bool selectGlobalValue(MachineInstr &I, MachineRegisterInfo &MRI,
                         MachineFunction &MF) const;
 
+  ComplexRendererFns selectVAXComplexOperand(const MachineOperand &Root,
+                                             bool Source,
+                                             int Width) const;
+
+  template <int Width>
+  ComplexRendererFns selectVAXComplexOperandSrc(MachineOperand &Root) const {
+    return selectVAXComplexOperand(Root, true, Width);
+  }
+
   const VAXInstrInfo &TII;
   const VAXRegisterInfo &TRI;
   const VAXRegisterBankInfo &RBI;
@@ -109,8 +118,6 @@ bool VAXInstructionSelector::select(MachineInstr &I) {
 bool VAXInstructionSelector::selectFrameIndex(MachineInstr &I,
                                               MachineRegisterInfo &MRI,
                                               MachineFunction &MF) const {
-  const Register DefReg = I.getOperand(0).getReg();
-
   // Use LEA to calculate frame index and GEP
   I.setDesc(TII.get(VAX::moval));
   MachineInstrBuilder MIB(MF, I);
@@ -143,6 +150,60 @@ bool VAXInstructionSelector::selectGlobalValue(MachineInstr &MI,
     return true;
   }
 }
+
+InstructionSelector::ComplexRendererFns
+VAXInstructionSelector::selectVAXComplexOperand(const MachineOperand &Root,
+                                                bool Source,
+                                                int Size) const
+{
+  auto &MRI = MF->getRegInfo();
+
+  Register OutReg = Register();
+  int64_t OutConstant = 0;
+
+  const TargetRegisterClass *SrcRC = nullptr;
+  switch (Size) {
+  case 32:
+    SrcRC = &VAX::GPRRegClass;
+    break;
+  case 16:
+    SrcRC = &VAX::GPRWRegClass;
+    break;
+  case 8:
+    SrcRC = &VAX::GPRBRegClass;
+    break;
+  default:
+    llvm_unreachable("unknown regclass");
+  }
+
+  if (Root.isReg()) {
+    Register Reg = Root.getReg();
+
+    if (auto *CstDef = getOpcodeDef(TargetOpcode::G_CONSTANT, Reg, MRI)) {
+      OutConstant = CstDef->getOperand(1).getCImm()->getSExtValue();
+    } else if (SrcRC->contains(Reg)) {
+      OutReg = Reg;
+    } else {
+      return std::nullopt;
+    }
+  } else if (Root.isImm()) {
+      OutConstant = Root.getImm();
+  } else {
+    return std::nullopt;
+  }
+  return {
+    // Reg 
+    {[=](MachineInstrBuilder &MIB) {
+      MIB.addUse(OutReg);
+    },
+     // Constant
+     [=](MachineInstrBuilder &MIB) {
+       MIB.addImm(OutConstant);
+     },
+    }
+  };
+}
+
 namespace llvm {
 InstructionSelector *
 createVAXInstructionSelector(const VAXTargetMachine &TM,

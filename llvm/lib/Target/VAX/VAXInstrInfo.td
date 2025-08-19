@@ -34,6 +34,10 @@ def VAXRegMask : SDNode<"VAXISD::PROCENTRYMASK", SDTUnaryOp,
 def imm8: Operand<i32>, ImmLeaf<i32, [{ return Imm >= 0 && Imm < 256; }]>;
 def imm32: Operand<i32>;
 
+//
+
+def VAXComplexOperandSrc : GIComplexOperandMatcher<s32, "selectVAXComplexOperandSrc<32>">;
+
 // Recognizes signed integers between 1 and 63 (inclusive), fitting in 7 bits
 // def posSImm7 : AsmOperandClass<"posSImm7", "isSImm<7>() && ValueIs>=0">;
 
@@ -645,3 +649,5 @@ def : Pat<(i32 imm:$val), (movl imm:$val)>;
 def : Pat<(f32 fpimm:$val), (movf fpimm:$val)>;
 def : Pat<(i64 imm:$val), (movq imm:$val)>;
 def : Pat<(i128 imm:$val), (movo imm:$val)>;
+def : Pat<(G_ADD VAXComplexOperandSrc:$foo, VAXComplexOperandSrc:$bar),
+    (add $foo, $bar)>;
