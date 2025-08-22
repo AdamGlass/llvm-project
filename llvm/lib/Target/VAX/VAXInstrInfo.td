@@ -36,7 +36,11 @@ def imm32: Operand<i32>;
 
 //
 
-def VAXComplexOperandSrc : GIComplexOperandMatcher<s32, "selectVAXComplexOperandSrc<32>">;
+def vaxop      : Operand<i32>, ComplexPattern<iPTR, 5, "selectVaxOp"> {
+  let MIOperandInfo = (ops GPR, imm32);
+  let PrintMethod = "printVaxOp";
+}
+def gi_vaxop : GIComplexOperandMatcher<s32, "selectVAXComplexOperandSrc<32>">, GIComplexPatternEquiv<vaxop>;
 
 // Recognizes signed integers between 1 and 63 (inclusive), fitting in 7 bits
 // def posSImm7 : AsmOperandClass<"posSImm7", "isSImm<7>() && ValueIs>=0">;
@@ -113,7 +117,7 @@ multiclass MInstVAX23<bits<16> base_op, SDNode NODE, VxSize SIZE> {
 }
 
 // ADD, DIV, MUL, SUB, XOR
-foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
+foreach SIZE = [VxSize8, VxSize16] in {
   defm add: MInstVAX23<0x80, add, SIZE>;
   defm div: MInstVAX23<0x86, sdiv, SIZE>;
   defm mul: MInstVAX23<0x84, mul, SIZE>;
@@ -121,6 +125,32 @@ foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   defm xor: MInstVAX23<0x8C, xor, SIZE>;
 }
 
+
+multiclass MInstVAX23new<bits<16> base_op, SDNode NODE, VxSize SIZE> {
+
+  // <base_op>       <op>B2
+  // <base_op>+0x1   <op>B3
+  // <base_op>+0x20  <op>W2
+  // <base_op>+0x21  <op>W3
+  // <base_op>+0x40  <op>L2
+  // <base_op>+0x41  <op>L3
+
+    def SIZE.Id # "3" : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
+                          (outs SIZE.DstRC:$dst),
+                          (ins vaxop:$src1, vaxop:$src2),
+                          !strconcat(NAME, SIZE.Id # "3", " $src1, $src2, $dst"),
+                          [(set SIZE.VT:$dst, (NODE vaxop:$src1, vaxop:$src2))]>;
+
+    // let need to define 2 variant but have to get constraints right
+}
+
+foreach SIZE = [VxSize32] in {
+  defm add: MInstVAX23new<0x80, add, SIZE>;
+  defm div: MInstVAX23new<0x86, sdiv, SIZE>;
+  defm mul: MInstVAX23new<0x84, mul, SIZE>;
+  defm sub: MInstVAX23new<0x82, sub, SIZE>;
+  defm xor: MInstVAX23new<0x8C, xor, SIZE>;
+}
 foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   def bic # SIZE.Id # "3": InstVAX<!add(0x8B, SIZE.OpOffset),
                                    (outs SIZE.DstRC:$dst),

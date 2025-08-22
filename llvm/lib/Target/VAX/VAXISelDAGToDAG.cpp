@@ -49,6 +49,10 @@ public:
 
   void Select(SDNode *N) override;
 
+  bool selectVaxOp(SDValue Addr, SDValue &Base, SDValue &Offset,
+                   SDValue &Other, SDValue &Other2, SDValue &Other3) {
+    return false;
+  }
   bool selectBVopSrc(SDValue Addr, SDValue &Base, SDValue &Offset,
                      SDValue &Other) {
     return false;

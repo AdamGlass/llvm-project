@@ -55,6 +55,8 @@ private:
     return selectVAXComplexOperand(Root, true, Width);
   }
 
+  bool isCompatibleRC(const TargetRegisterClass &TargetRC, const Register &Reg) const;
+
   const VAXInstrInfo &TII;
   const VAXRegisterInfo &TRI;
   const VAXRegisterBankInfo &RBI;
@@ -151,6 +153,18 @@ bool VAXInstructionSelector::selectGlobalValue(MachineInstr &MI,
   }
 }
 
+bool VAXInstructionSelector::isCompatibleRC(const TargetRegisterClass &TargetRC, const Register &Reg) const {
+  auto &MRI = MF->getRegInfo();
+
+  if (Reg.isVirtual()) {
+    const TargetRegisterClass *RC = MRI.getRegClass(Reg);
+    return TRI.getCommonSubClass(RC, &TargetRC);
+  } else {
+    const TargetRegisterClass *RC = TRI.getMinimalPhysRegClass(Reg);
+    return TRI.getCommonSubClass(RC, &TargetRC);
+  }
+}
+
 InstructionSelector::ComplexRendererFns
 VAXInstructionSelector::selectVAXComplexOperand(const MachineOperand &Root,
                                                 bool Source,
@@ -158,43 +172,39 @@ VAXInstructionSelector::selectVAXComplexOperand(const MachineOperand &Root,
 {
   auto &MRI = MF->getRegInfo();
 
-  Register OutReg = Register();
+  Register OutReg = VAX::PSL;
   int64_t OutConstant = 0;
 
-  const TargetRegisterClass *SrcRC = nullptr;
-  switch (Size) {
-  case 32:
-    SrcRC = &VAX::GPRRegClass;
-    break;
-  case 16:
-    SrcRC = &VAX::GPRWRegClass;
-    break;
-  case 8:
-    SrcRC = &VAX::GPRBRegClass;
-    break;
-  default:
-    llvm_unreachable("unknown regclass");
-  }
+  LLVM_DEBUG(dbgs() << "select VAXOP\n");
+  LLVM_DEBUG(dbgs() << "past regclass\n");
 
   if (Root.isReg()) {
     Register Reg = Root.getReg();
 
     if (auto *CstDef = getOpcodeDef(TargetOpcode::G_CONSTANT, Reg, MRI)) {
       OutConstant = CstDef->getOperand(1).getCImm()->getSExtValue();
-    } else if (SrcRC->contains(Reg)) {
+      LLVM_DEBUG(dbgs() << "its a constant\n");
+
+    } else if (true) {
       OutReg = Reg;
+      LLVM_DEBUG(dbgs() << "its a reg\n");
     } else {
+      LLVM_DEBUG(dbgs() << "fail\n");
       return std::nullopt;
     }
+
+
   } else if (Root.isImm()) {
       OutConstant = Root.getImm();
+      LLVM_DEBUG(dbgs() << "imm\n");
   } else {
     return std::nullopt;
+      LLVM_DEBUG(dbgs() << "not imm\n");
   }
   return {
     // Reg 
     {[=](MachineInstrBuilder &MIB) {
-      MIB.addUse(OutReg);
+      MIB.addReg(OutReg);
     },
      // Constant
      [=](MachineInstrBuilder &MIB) {
