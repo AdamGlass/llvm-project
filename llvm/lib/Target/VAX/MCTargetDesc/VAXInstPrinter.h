@@ -39,6 +39,7 @@ private:
   void printInlineJT(const MCInst *MI, int opNum, raw_ostream &O);
   void printInlineJT32(const MCInst *MI, int opNum, raw_ostream &O);
   void printOperand(const MCInst *MI, unsigned OpNo, raw_ostream &O);
+  void printVaxOp(const MCInst *MI, unsigned OpNo, raw_ostream &O);
 };
 
 } // end namespace llvm

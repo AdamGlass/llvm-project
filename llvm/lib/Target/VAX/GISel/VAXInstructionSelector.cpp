@@ -15,12 +15,21 @@
 #include "VAXTargetMachine.h"
 #include "llvm/CodeGen/GlobalISel/GIMatchTableExecutorImpl.h"
 #include "llvm/CodeGen/GlobalISel/InstructionSelector.h"
+#include "llvm/CodeGen/GlobalISel/MIPatternMatch.h"
 #include "llvm/CodeGen/GlobalISel/MachineIRBuilder.h"
 //#include "llvm/IR/IntrinsicsVAX.h"
 
 #define DEBUG_TYPE "vax-gisel"
 
 using namespace llvm;
+using namespace MIPatternMatch;
+
+enum VAX_AMode {
+  VAXAm_IndLiteral = 0,
+  VAXAm_ImmLiteral = 1,
+  VAXAm_Register = 2,
+  VAXAm_RegisterDeferred = 3,
+};
 
 namespace {
 
@@ -94,6 +103,11 @@ bool VAXInstructionSelector::select(MachineInstr &I) {
   LLVM_DEBUG(dbgs() << "select("<< I.getOpcode() << ")\n");
   if (!isPreISelGenericOpcode(I.getOpcode()))
     return true;
+
+  if (I.getOpcode() == TargetOpcode::G_CONSTANT) {
+    // Let the consumer matcher handle it
+    return false;
+  }
 
   if (selectImpl(I, *CoverageInfo))
     return true;
@@ -172,46 +186,43 @@ VAXInstructionSelector::selectVAXComplexOperand(const MachineOperand &Root,
 {
   auto &MRI = MF->getRegInfo();
 
-  Register OutReg = VAX::PSL;
-  int64_t OutConstant = 0;
+  VAX_AMode Mode;
+  Register Reg = Register();
+  int64_t Literal = 0;
+  std::optional<ValueAndVReg> LiteralReg;
 
   LLVM_DEBUG(dbgs() << "select VAXOP\n");
   LLVM_DEBUG(dbgs() << "past regclass\n");
 
-  if (Root.isReg()) {
-    Register Reg = Root.getReg();
-
-    if (auto *CstDef = getOpcodeDef(TargetOpcode::G_CONSTANT, Reg, MRI)) {
-      OutConstant = CstDef->getOperand(1).getCImm()->getSExtValue();
-      LLVM_DEBUG(dbgs() << "its a constant\n");
-
-    } else if (true) {
-      OutReg = Reg;
-      LLVM_DEBUG(dbgs() << "its a reg\n");
-    } else {
-      LLVM_DEBUG(dbgs() << "fail\n");
-      return std::nullopt;
-    }
-
-
-  } else if (Root.isImm()) {
-      OutConstant = Root.getImm();
-      LLVM_DEBUG(dbgs() << "imm\n");
-  } else {
+  if (Root.isImm()) {
+    Literal = Root.getImm();
+    Reg = Register();
+    Mode = VAXAm_ImmLiteral;
+    LLVM_DEBUG(dbgs() << "found immediate\n");
+  } else if (!Root.isReg()) {
+    LLVM_DEBUG(dbgs() << "not a reg\n");
     return std::nullopt;
-      LLVM_DEBUG(dbgs() << "not imm\n");
   }
+
+  Reg = Root.getReg();
+  Mode = VAXAm_Register;
+
+  if (mi_match(Reg, MRI, m_ICst(Literal))) {
+    Mode = VAXAm_IndLiteral;
+    Reg = Register();
+    LLVM_DEBUG(dbgs() << "matched constant reg");
+  }
+
   return {
-    // Reg 
-    {[=](MachineInstrBuilder &MIB) {
-      MIB.addReg(OutReg);
-    },
-     // Constant
-     [=](MachineInstrBuilder &MIB) {
-       MIB.addImm(OutConstant);
-     },
-    }
-  };
+          {
+              [=](MachineInstrBuilder &MIB) {
+                MIB.addImm(static_cast<int64_t>(Mode));
+              },
+              // Reg
+              [=](MachineInstrBuilder &MIB) { MIB.addReg(Reg); },
+              // Constant
+              [=](MachineInstrBuilder &MIB) { MIB.addImm(Literal); },
+          }};
 }
 
 namespace llvm {

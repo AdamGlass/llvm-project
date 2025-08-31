@@ -73,6 +73,26 @@ static void printExpr(const MCExpr *Expr, const MCAsmInfo *MAI,
   }
 }
 
+void VAXInstPrinter::printVaxOp(const MCInst *MI, unsigned OpNo,
+                                raw_ostream &O) {
+
+  const MCOperand &ModeOp = MI->getOperand(OpNo);
+  const MCOperand &RegOp = MI->getOperand(OpNo+1);
+  const MCOperand &LitOp = MI->getOperand(OpNo+2);
+
+  int64_t mode = ModeOp.getImm();
+
+  switch (mode) {
+  case 0:
+  case 1:
+    O << '$' << LitOp.getImm();
+    return;
+  case 2:
+    printRegName(O, RegOp.getReg());
+    return;
+  }
+}
+
 void VAXInstPrinter::printOperand(const MCInst *MI, unsigned OpNo,
                                   raw_ostream &O) {
   const MCOperand &Op = MI->getOperand(OpNo);

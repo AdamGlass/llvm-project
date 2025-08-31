@@ -34,10 +34,13 @@ def VAXRegMask : SDNode<"VAXISD::PROCENTRYMASK", SDTUnaryOp,
 def imm8: Operand<i32>, ImmLeaf<i32, [{ return Imm >= 0 && Imm < 256; }]>;
 def imm32: Operand<i32>;
 
+def amode: Operand<i32>;
+def sentinel: Operand<i32>;
+
 //
 
-def vaxop      : Operand<i32>, ComplexPattern<iPTR, 5, "selectVaxOp"> {
-  let MIOperandInfo = (ops GPR, imm32);
+def vaxop      : Operand<i32>, ComplexPattern<iPTR, 3, "selectVaxOp"> {
+  let MIOperandInfo = (ops amode, GPR, imm32);
   let PrintMethod = "printVaxOp";
 }
 def gi_vaxop : GIComplexOperandMatcher<s32, "selectVAXComplexOperandSrc<32>">, GIComplexPatternEquiv<vaxop>;
@@ -673,11 +676,11 @@ def PROCENTRYMASK : PseudoInstVAX<(outs),
 
 
 // Patterns
-def : Pat<(i8 imm:$val), (movb imm:$val)>;
-def : Pat<(i16 imm:$val), (movw imm:$val)>;
-def : Pat<(i32 imm:$val), (movl imm:$val)>;
-def : Pat<(f32 fpimm:$val), (movf fpimm:$val)>;
-def : Pat<(i64 imm:$val), (movq imm:$val)>;
-def : Pat<(i128 imm:$val), (movo imm:$val)>;
+//def : Pat<(i8 imm:$val), (movb imm:$val)>;
+//def : Pat<(i16 imm:$val), (movw imm:$val)>;
+//def : Pat<(i32 imm:$val), (movl imm:$val)>;
+//def : Pat<(f32 fpimm:$val), (movf fpimm:$val)>;
+//def : Pat<(i64 imm:$val), (movq imm:$val)>;
+//def : Pat<(i128 imm:$val), (movo imm:$val)>;
 //def : Pat<(G_ADD VAXComplexOperandSrc:$foo, VAXComplexOperandSrc:$bar),
 //    (add $foo, $bar)>;
