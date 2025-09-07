@@ -80,6 +80,8 @@ void VAXInstPrinter::printVaxOp(const MCInst *MI, unsigned OpNo,
   const MCOperand &RegOp = MI->getOperand(OpNo+1);
   const MCOperand &LitOp = MI->getOperand(OpNo+2);
 
+  O << "VAXOP: ";
+
   int64_t mode = ModeOp.getImm();
 
   switch (mode) {

@@ -54,18 +54,28 @@ def VPcDispPat : ComplexPattern<iPTR, 2, "selectVPcDispOp", []>;
 def VPcAddrOp : Operand<iPTR>;
 def VPcAddrPat : ComplexPattern<iPTR, 2, "selectVPcAddrOp", []>;
 
-multiclass VxOperands<ValueType VT> {
-  def Src: Operand<VT>;
+def s8: LLT;
+def s16: LLT;
+def s128: LLT;
+
+multiclass VxOperands<ValueType VT, LLT LLT, int Width> {
+  def Src : Operand<VT> {
+      let MIOperandInfo = (ops amode, GPR, imm32);
+      let PrintMethod = "printVaxOp";
+  }
+  def SrcPat: ComplexPattern<iPTR, 3, "selectVaxOp">;
+  def gi_SrcPat : GIComplexOperandMatcher<LLT, 
+  !strconcat("selectVAXComplexOperandSrc<", !cast<string>(Width),">")>, GIComplexPatternEquiv<!cast<ComplexPattern>(NAME # "SrcPat")>;
+
   def Dst: Operand<VT>;
-  def SrcPat: ComplexPattern<VT, 3, "select" # NAME # "Src", [add, frameindex, ld]>;
   def DstPat: ComplexPattern<VT, 3, "select" # NAME # "Dst", [add, frameindex, ld]>;
 }
 
-defm BVop: VxOperands<i8>;//, GPRB, GPRB, GPRnoPC>;
-defm WVop: VxOperands<i16>;//, GPRW, GPRW, GPRnoPC>;
-defm LVop: VxOperands<i32>;//, GPRnoPC, GPRnoPC, GPRnoPC>;
-defm QVop: VxOperands<i64>;//, QPR, QPR, GPRnoPC>;
-defm OVop: VxOperands<i128>;//, OPR, OPR, GPRnoPC>;
+defm BVop: VxOperands<i8, s8, 8>;//, GPRB, GPRB, GPRnoPC>;
+defm WVop: VxOperands<i16, s16, 16>;//, GPRW, GPRW, GPRnoPC>;
+defm LVop: VxOperands<i32, s32, 32>;//, GPRnoPC, GPRnoPC, GPRnoPC>;
+defm QVop: VxOperands<i64, s64, 64>;//, QPR, QPR, GPRnoPC>;
+defm OVop: VxOperands<i128, s128, 128>;//, OPR, OPR, GPRnoPC>;
 
 // XXX Can we make OpOffset work or do we need to move to base_op, extended op
 
@@ -79,8 +89,8 @@ class VxSize<int num, string id, string mode_prefix, ValueType vt, RegisterClass
   string ModePrefix = mode_prefix;
   Operand SrcOp = srcop;
   Operand DstOp = dstop;
-  ComplexPattern SrcOpPat = srcpat;
-  ComplexPattern DstOpPat = dstpat;
+  ComplexPattern SrcPat = srcpat;
+  ComplexPattern DstPat = dstpat;
   dag Zero = zero;
 }
 
@@ -120,13 +130,13 @@ multiclass MInstVAX23<bits<16> base_op, SDNode NODE, VxSize SIZE> {
 }
 
 // ADD, DIV, MUL, SUB, XOR
-foreach SIZE = [VxSize8, VxSize16] in {
-  defm add: MInstVAX23<0x80, add, SIZE>;
-  defm div: MInstVAX23<0x86, sdiv, SIZE>;
-  defm mul: MInstVAX23<0x84, mul, SIZE>;
-  defm sub: MInstVAX23<0x82, sub, SIZE>;
-  defm xor: MInstVAX23<0x8C, xor, SIZE>;
-}
+//foreach SIZE = [] in {
+//  defm add: MInstVAX23<0x80, add, SIZE>;
+//  defm div: MInstVAX23<0x86, sdiv, SIZE>;
+//  defm mul: MInstVAX23<0x84, mul, SIZE>;
+//  defm sub: MInstVAX23<0x82, sub, SIZE>;
+//  defm xor: MInstVAX23<0x8C, xor, SIZE>;
+//}
 
 
 multiclass MInstVAX23new<bits<16> base_op, SDNode NODE, VxSize SIZE> {
@@ -140,20 +150,21 @@ multiclass MInstVAX23new<bits<16> base_op, SDNode NODE, VxSize SIZE> {
 
     def SIZE.Id # "3" : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
                           (outs SIZE.DstRC:$dst),
-                          (ins vaxop:$src1, vaxop:$src2),
+                          (ins SIZE.SrcOp:$src1, SIZE.SrcOp:$src2),
                           !strconcat(NAME, SIZE.Id # "3", " $src1, $src2, $dst"),
-                          [(set SIZE.VT:$dst, (NODE vaxop:$src1, vaxop:$src2))]>;
+                          [(set SIZE.VT:$dst, (NODE SIZE.SrcPat:$src1, SIZE.SrcPat:$src2))]>;
 
     // let need to define 2 variant but have to get constraints right
 }
 
-foreach SIZE = [VxSize32] in {
+foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   defm add: MInstVAX23new<0x80, add, SIZE>;
   defm div: MInstVAX23new<0x86, sdiv, SIZE>;
   defm mul: MInstVAX23new<0x84, mul, SIZE>;
   defm sub: MInstVAX23new<0x82, sub, SIZE>;
   defm xor: MInstVAX23new<0x8C, xor, SIZE>;
 }
+
 foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   def bic # SIZE.Id # "3": InstVAX<!add(0x8B, SIZE.OpOffset),
                                    (outs SIZE.DstRC:$dst),
@@ -571,10 +582,10 @@ def index: InstVAX<0xA,
 
 // Floating Point
 
-defm FVop: VxOperands<f32>; //, FFPR, FFPR, GPRnoPC>;
-defm DVop: VxOperands<f64>;// GPRW, GPRW, GPRnoPC>;
-defm GVop: VxOperands<f64>;// GPRnoPC, GPRnoPC, GPRnoPC>;
-defm HVop: VxOperands<f128>;// QPR, QPR, GPRnoPC>;
+defm FVop: VxOperands<f32, s32, 32>; //, FFPR, FFPR, GPRnoPC>;
+defm DVop: VxOperands<f64, s64, 64>;// GPRW, GPRW, GPRnoPC>;
+defm GVop: VxOperands<f64, s64, 64>;// GPRnoPC, GPRnoPC, GPRnoPC>;
+defm HVop: VxOperands<f128, s128, 128>;// QPR, QPR, GPRnoPC>;
 
 def VxSizeF32: VxSize<32, "f", "F", f32, FFPR, FFPR, 0, FVopSrc, FVopSrcPat, FVopDst, FVopDstPat, (f32 0)>;
 def VxSizeD64: VxSize<64, "d", "D",f64, DFPR, DFPR, 0x20, DVopSrc, DVopSrcPat, DVopDst, DVopDstPat, (f64 0)>;
