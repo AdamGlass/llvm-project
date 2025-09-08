@@ -63,7 +63,8 @@ multiclass VxOperands<ValueType VT, LLT LLT, int Width> {
       let MIOperandInfo = (ops amode, GPR, imm32);
       let PrintMethod = "printVaxOp";
   }
-  def SrcPat: ComplexPattern<iPTR, 3, "selectVaxOp">;
+  // XXX BOGUS patterns
+  def SrcPat: ComplexPattern<VT, 3, "selectVaxOp", [add, fadd]>;
   def gi_SrcPat : GIComplexOperandMatcher<LLT, 
   !strconcat("selectVAXComplexOperandSrc<", !cast<string>(Width),">")>, GIComplexPatternEquiv<!cast<ComplexPattern>(NAME # "SrcPat")>;
 
@@ -108,38 +109,7 @@ defvar VxGenSizes = [VxSize8, VxSize16, VxSize32];
 // NOTE: Temporarily treat as load/store architecture to get something running.
 //       Work on addressing mode(s) problem with load/store first.
 
-//
-// Integer Arithemtic and Logical Instructions
-//
 multiclass MInstVAX23<bits<16> base_op, SDNode NODE, VxSize SIZE> {
-
-  // <base_op>       <op>B2
-  // <base_op>+0x1   <op>B3
-  // <base_op>+0x20  <op>W2
-  // <base_op>+0x21  <op>W3
-  // <base_op>+0x40  <op>L2
-  // <base_op>+0x41  <op>L3
-
-    def SIZE.Id # "3" : InstVAX<!add(!add(base_op, SIZE.OpOffset),1),
-                          (outs SIZE.DstRC:$dst),
-                          (ins SIZE.SrcRC:$src1, SIZE.SrcRC:$src2),
-                          !strconcat(NAME, SIZE.Id # "3", " $src1, $src2, $dst"),
-                          [(set SIZE.VT:$dst, (NODE SIZE.SrcRC:$src1, SIZE.SrcRC:$src2))]>;
-
-    // let need to define 2 variant but have to get constraints right
-}
-
-// ADD, DIV, MUL, SUB, XOR
-//foreach SIZE = [] in {
-//  defm add: MInstVAX23<0x80, add, SIZE>;
-//  defm div: MInstVAX23<0x86, sdiv, SIZE>;
-//  defm mul: MInstVAX23<0x84, mul, SIZE>;
-//  defm sub: MInstVAX23<0x82, sub, SIZE>;
-//  defm xor: MInstVAX23<0x8C, xor, SIZE>;
-//}
-
-
-multiclass MInstVAX23new<bits<16> base_op, SDNode NODE, VxSize SIZE> {
 
   // <base_op>       <op>B2
   // <base_op>+0x1   <op>B3
@@ -157,27 +127,31 @@ multiclass MInstVAX23new<bits<16> base_op, SDNode NODE, VxSize SIZE> {
     // let need to define 2 variant but have to get constraints right
 }
 
+//
+// Integer Arithemtic and Logical Instructions
+//
+
 foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
-  defm add: MInstVAX23new<0x80, add, SIZE>;
-  defm div: MInstVAX23new<0x86, sdiv, SIZE>;
-  defm mul: MInstVAX23new<0x84, mul, SIZE>;
-  defm sub: MInstVAX23new<0x82, sub, SIZE>;
-  defm xor: MInstVAX23new<0x8C, xor, SIZE>;
+  defm add: MInstVAX23<0x80, add, SIZE>;
+  defm div: MInstVAX23<0x86, sdiv, SIZE>;
+  defm mul: MInstVAX23<0x84, mul, SIZE>;
+  defm sub: MInstVAX23<0x82, sub, SIZE>;
+  defm xor: MInstVAX23<0x8C, xor, SIZE>;
 }
 
 foreach SIZE = [VxSize8, VxSize16, VxSize32] in {
   def bic # SIZE.Id # "3": InstVAX<!add(0x8B, SIZE.OpOffset),
                                    (outs SIZE.DstRC:$dst),
-                                   (ins SIZE.SrcRC:$mask, SIZE.SrcRC:$src),
+                                   (ins SIZE.SrcOp:$mask, SIZE.SrcOp:$src),
                                    "bic" # SIZE.Id # "3 $mask, $src, $dst",
-                                   [(set SIZE.VT:$dst, (and (not SIZE.SrcRC:$mask),  SIZE.SrcRC:$src))]>;
+                                   [(set SIZE.VT:$dst, (and (not SIZE.SrcPat:$mask),  SIZE.SrcPat:$src))]>;
   // XXX add BIC<SIZE>2
 
   def bis # SIZE.Id # "3": InstVAX<!add(0x88, SIZE.OpOffset),
                                    (outs SIZE.DstRC:$dst),
-                                   (ins SIZE.SrcRC:$mask, SIZE.SrcRC:$src),
+                                   (ins SIZE.SrcOp:$mask, SIZE.SrcOp:$src),
                                    "bis" # SIZE.Id # "3 $mask, $src, $dst",
-                                   [(set SIZE.VT:$dst, (or SIZE.SrcRC:$mask,  SIZE.SrcRC:$src))]>;
+                                   [(set SIZE.VT:$dst, (or SIZE.SrcPat:$mask,  SIZE.SrcPat:$src))]>;
 }
 
 // Implementing this is a PIA
@@ -259,17 +233,23 @@ def cvtbl: InstVAX<0x96,
 // MOV - Move
 // XXX for MOVQ VxSize64
 foreach SIZE = [VxSize8, VxSize16, VxSize32, VxSize64, VxSize128] in {
-  def mov # SIZE.Id : InstVAX<!add(0x90, SIZE.OpOffset),
+  def movload # SIZE.Id : InstVAX<!add(0x90, SIZE.OpOffset),
                           (outs SIZE.DstRC:$dst),
                           (ins SIZE.SrcRC:$src),
-                          !strconcat("mov" # SIZE.Id, " $src, $dst"),
+                          !strconcat("movload" # SIZE.Id, " $src, $dst"),
                           [(set SIZE.VT:$dst, (load SIZE.SrcRC:$src))]>;
 
-  def movs # SIZE.Id : PseudoInstVAX<
+  def movstore # SIZE.Id : PseudoInstVAX<
                           (outs),
                           (ins SIZE.SrcRC:$val, GPR:$addr),
-                          !strconcat("movs" # SIZE.Id, " $val, $addr"),
+                          !strconcat("movstore" # SIZE.Id, " $val, $addr"),
                           [(store SIZE.SrcRC:$val, GPR:$addr)]>;
+
+  def movv # SIZE.Id : PseudoInstVAX<
+                          (outs SIZE.DstRC:$dst),
+                          (ins SIZE.SrcOp:$src),
+                          !strconcat("movv" # SIZE.Id, " $src, $dst"),
+                          [(set SIZE.VT:$dst, SIZE.SrcPat:$src)]>;
 }
 
 
@@ -687,11 +667,11 @@ def PROCENTRYMASK : PseudoInstVAX<(outs),
 
 
 // Patterns
-//def : Pat<(i8 imm:$val), (movb imm:$val)>;
-//def : Pat<(i16 imm:$val), (movw imm:$val)>;
-//def : Pat<(i32 imm:$val), (movl imm:$val)>;
-//def : Pat<(f32 fpimm:$val), (movf fpimm:$val)>;
-//def : Pat<(i64 imm:$val), (movq imm:$val)>;
-//def : Pat<(i128 imm:$val), (movo imm:$val)>;
+def : Pat<(i8 imm:$val), (movvb BVopSrc:$val)>;
+def : Pat<(i16 imm:$val), (movvw WVopSrc:$val)>;
+def : Pat<(i32 imm:$val), (movvl LVopSrc:$val)>;
+//def : Pat<(f32 fpimm:$val), (movvf fpimm:$val)>;
+//def : Pat<(i64 imm:$val), (movvq imm:$val)>;
+//def : Pat<(i128 imm:$val), (movvo imm:$val)>;
 //def : Pat<(G_ADD VAXComplexOperandSrc:$foo, VAXComplexOperandSrc:$bar),
 //    (add $foo, $bar)>;
